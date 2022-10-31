@@ -76,23 +76,23 @@
     <dependency>
       <groupId>com.avispl.symphony.api</groupId>
       <artifactId>symphony-api-commons</artifactId>
-      <version>5.6.0</version>
+      <version>5.7.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-api-commons-5.6.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-api-commons-5.7.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.avispl.symphony.api</groupId>
       <artifactId>symphony-api-dal</artifactId>
-      <version>5.6.0</version>
+      <version>5.7.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-api-dal-5.6.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-api-dal-5.7.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.avispl.symphony.dal</groupId>
       <artifactId>symphony-dal-commons</artifactId>
-      <version>5.6.0</version>
+      <version>5.7.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-dal-commons-5.6.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-dal-commons-5.7.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>org.icmp4j</groupId>
@@ -106,13 +106,13 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-expression</artifactId>
-      <version>5.2.6.RELEASE</version>
+      <version>5.2.22.RELEASE</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>5.2.6.RELEASE</version>
+      <version>5.2.22.RELEASE</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -166,7 +166,7 @@
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
-      <version>5.9.0</version>
+      <version>5.12.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
