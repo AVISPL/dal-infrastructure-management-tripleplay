@@ -46,7 +46,7 @@ import com.avispl.symphony.dal.util.StringUtils;
  * Created on 3/13/2023
  * @since 1.0.0
  */
-public class TriplePlayCommunicator extends RestCommunicator implements Aggregator, Monitorable, Controller {
+public class TriplePlayAggregatorCommunicator extends RestCommunicator implements Aggregator, Monitorable, Controller {
 
 	class ClientLoader implements Runnable {
 		private volatile List<String> clientIps;

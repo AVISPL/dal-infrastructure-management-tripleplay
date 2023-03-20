@@ -5,8 +5,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.avispl.symphony.dal.infrastructure.management.tripleplay</groupId>
-  <artifactId>dal-infrastructure-management-tripleplay</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>symphony-dal-infrastructure-management-tripleplay</artifactId>
+  <version>1.0.0</version>
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
