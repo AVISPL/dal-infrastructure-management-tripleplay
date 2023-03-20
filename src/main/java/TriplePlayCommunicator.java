@@ -31,7 +31,6 @@ import common.dto.request.implement.QueryClientsListRequestBody;
 
 import com.avispl.symphony.api.dal.control.Controller;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
-import com.avispl.symphony.api.dal.dto.monitor.ExtendedStatistics;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
 import com.avispl.symphony.api.dal.dto.monitor.aggregator.AggregatedDevice;
 import com.avispl.symphony.api.dal.error.ResourceNotReachableException;
@@ -51,22 +50,16 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 
 	class ClientLoader implements Runnable {
 		private volatile List<String> clientIps;
-		private int threadNumber;
 
 		public ClientLoader(List<String> clientIps) {
 			this.clientIps = clientIps;
-		}
-
-		public ClientLoader(List<String> clientIps, int threadNumber) {
-			this.clientIps = clientIps;
-			this.threadNumber = threadNumber;
 		}
 
 		@Override
 		public void run() {
 
 			if (!cachedClients.isEmpty()) {
-				retrieveClient(this.clientIps, this.threadNumber);
+				retrieveClient(this.clientIps);
 			}
 		}
 	}
@@ -85,22 +78,15 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 	private volatile int deviceStatisticsCollectionThreads;
 
 	/**
-	 * configManagement in boolean value
-	 */
-	private boolean isConfigManagement;
-
-	/**
 	 * store pollingInterval adapter properties
 	 */
 	private volatile String pollingInterval;
 
-	private volatile int currentPhase = 0;
 	private volatile String lastClientIp;
 	private List<Future> clientExecutionPool = new ArrayList<>();
 	private TreeMap<String, Client> cachedClients = new TreeMap<>();
 	private Map<String, AggregatedDevice> cachedAggregatedDevices = new ConcurrentHashMap<>();
-	private List<Service> cacheServices = new ArrayList<>();
-	private ExtendedStatistics localExtendedStatistics;
+	private List<Service> cachedServices = new ArrayList<>();
 	private boolean isEmergencyDelivery = false;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -151,7 +137,7 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 	 *
 	 * @param clientIps List client will be get information in a thread
 	 */
-	private void retrieveClient(List<String> clientIps, int threadNumber) {
+	private void retrieveClient(List<String> clientIps) {
 		int clientNumber = 0;
 		while (clientNumber < clientIps.size()) {
 			QueryClientRequestBodyV2 queryClientRequest = new QueryClientRequestBodyV2();
@@ -233,7 +219,6 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 		reentrantLock.lock();
 		try {
 			if (!isEmergencyDelivery) {
-				Map<String, String> stats = new HashMap<>();
 				int currentSizeCacheClients = cachedClients.size();
 				retrieveClients();
 				retrieveService();
@@ -285,7 +270,7 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 				itClient = cacheClientIt.next().getKey();
 				requestClientIp.add(itClient);
 			}
-			executorService.submit(new ClientLoader(requestClientIp, threadNumber));
+			executorService.submit(new ClientLoader(requestClientIp));
 		}
 
 		//Update next ClientIp to next getMultipleStatistics
@@ -302,7 +287,8 @@ public class TriplePlayCommunicator extends RestCommunicator implements Aggregat
 			requestBody.setParam(-1);
 			String response = doPost(TriplePlayURL.BASE_URI, requestBody.buildRequestBody());
 			ServiceWrapper monitoringData = objectMapper.readValue(response, ServiceWrapper.class);
-			cacheServices = monitoringData.getServices();
+			cachedServices = monitoringData.getServices();
+			logger.debug(cachedServices);
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
