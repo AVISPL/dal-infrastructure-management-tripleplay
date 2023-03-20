@@ -275,6 +275,6 @@ public class Client implements Comparable<Client> {
 
 	@Override
 	public int compareTo(Client client) {
-		return (Integer.parseInt(this.clientId)-Integer.parseInt(client.getClientId()));
+		return this.network.getIp().compareTo(client.getNetwork().getIp());
 	}
 }

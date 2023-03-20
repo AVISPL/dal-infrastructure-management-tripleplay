@@ -7,6 +7,6 @@ package common.dto.request;
  * Created on 3/15/2023
  * @since 1.0.0
  */
-public interface Request {
-	String buildRequest();
+public interface RequestBody {
+	String buildRequestBody();
 }

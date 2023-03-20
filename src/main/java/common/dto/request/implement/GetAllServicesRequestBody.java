@@ -1,6 +1,6 @@
 package common.dto.request.implement;
 
-import common.dto.request.Request;
+import common.dto.request.RequestBody;
 
 /**
  * GetAllServicesRequest
@@ -9,12 +9,12 @@ import common.dto.request.Request;
  * Created on 3/15/2023
  * @since 1.0.0
  */
-public class GetAllServicesRequest implements Request {
+public class GetAllServicesRequestBody implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD="GetAllServices";
 	private int param;
 
-	public GetAllServicesRequest() {
+	public GetAllServicesRequestBody() {
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class GetAllServicesRequest implements Request {
 	}
 
 	@Override
-	public String buildRequest() {
+	public String buildRequestBody() {
 		return String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\"params\":[%d]}",this.jsonrpc,this.METHOD,this.param);
 	}
 }

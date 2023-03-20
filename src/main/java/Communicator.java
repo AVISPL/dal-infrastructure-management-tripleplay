@@ -1,25 +1,33 @@
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.math.IntMath;
+import common.ClientInfoMetric;
+import common.HardwareMetric;
+import common.NetworkMetric;
 import common.TriplePlayConstrant;
 import common.TriplePlayURL;
 import common.dto.Client;
 import common.dto.MonitoringData;
 import common.dto.Service;
 import common.dto.ServiceWrapper;
-import common.dto.request.implement.GetAllServicesRequest;
-import common.dto.request.implement.QueryClientsListRequest;
-import common.dto.request.implement.QueryClientsRequest;
+import common.dto.request.implement.GetAllServicesRequestBody;
+import common.dto.request.implement.QueryClientRequestBodyV2;
+import common.dto.request.implement.QueryClientsListRequestBody;
 
 import com.avispl.symphony.api.dal.control.Controller;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
@@ -42,16 +50,23 @@ import com.avispl.symphony.dal.util.StringUtils;
 public class Communicator extends RestCommunicator implements Aggregator, Monitorable, Controller {
 
 	class ClientLoader implements Runnable {
-		private volatile int threadNumber;
+		private volatile List<String> clientIps;
+		private int threadNumber;
 
-		public ClientLoader(int threadNumber) {
+		public ClientLoader(List<String> clientIps) {
+			this.clientIps = clientIps;
+		}
+
+		public ClientLoader(List<String> clientIps, int threadNumber) {
+			this.clientIps = clientIps;
 			this.threadNumber = threadNumber;
 		}
 
 		@Override
 		public void run() {
-			if (!cacheClients.isEmpty()) {
-				retrieveClient(threadNumber);
+
+			if (!cachedClients.isEmpty()) {
+				retrieveClient(this.clientIps, this.threadNumber);
 			}
 		}
 	}
@@ -80,54 +95,95 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 	private volatile String pollingInterval;
 
 	private volatile int currentPhase = 0;
+	private volatile String lastClientIp;
 	private List<Future> clientExecutionPool = new ArrayList<>();
-	private Map<String, Client> cacheClients = new HashMap<>();
+	private TreeMap<String, Client> cachedClients = new TreeMap<>();
+	private Map<String, AggregatedDevice> cachedAggregatedDevices = new ConcurrentHashMap<>();
 	private List<Service> cacheServices = new ArrayList<>();
 	private ExtendedStatistics localExtendedStatistics;
 	private boolean isEmergencyDelivery = false;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	private void updateCacheClient(List<Client> clients) {
+	/**
+	 * Return value if value not null, else return NONE
+	 * @param value value need to check null or not
+	 * @return
+	 */
+	private String getDefaultValueForNullOrEmpty(String value){
+		return StringUtils.isNullOrEmpty(value)?value:TriplePlayConstrant.NONE;
+	}
+	private void updateCachedClients(List<Client> clients, boolean updateProperties) {
 		for (Client client : clients) {
 			if (!StringUtils.isNullOrEmpty(client.getLocale())) {
 				client.setLocale(getDisplayLocalByLocale(client.getLocale()));
 			}
-			cacheClients.put(client.getClientId(), client);
+			// map clients to properties of Aggregated device.
+			if (updateProperties) {
+				AggregatedDevice aggregatedDevice = new AggregatedDevice();
+				Map<String, String> properties = new HashMap<>();
+				properties.put(ClientInfoMetric.DEVICE_ID.getName(), getDefaultValueForNullOrEmpty(client.getClientId()));
+				properties.put(ClientInfoMetric.DEVICE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getType()));
+				properties.put(ClientInfoMetric.LOCALE.getName(), getDefaultValueForNullOrEmpty(client.getLocale()));
+				properties.put(ClientInfoMetric.LOCALTION.getName(), getDefaultValueForNullOrEmpty(client.getLocation()));
+				if (client.getHardware()!=null){
+					properties.put(HardwareMetric.HARDWARE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getType()));
+					properties.put(HardwareMetric.HARDWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getHardwareVersion()));
+					properties.put(HardwareMetric.HARDWARE_MODEL.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getModel()));
+					properties.put(HardwareMetric.SOFTWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSoftwareVersion()));
+					properties.put(HardwareMetric.SERIAL_NUMBER.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSerialNumber()));
+				}
+				if (client.getNetwork()!=null){
+					properties.put(NetworkMetric.IP_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getIp()));
+					properties.put(NetworkMetric.MAC_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getMac()));
+					properties.put(NetworkMetric.DHCP_SUBNET.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getDhcpSubnet()));
+				}
+				aggregatedDevice.setProperties(properties);
+
+				cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
+			}
+
+			cachedClients.put(client.getNetwork().getIp(), client);
 		}
 	}
 
-	private void retrieveClient(int threadNumber) {
-		QueryClientsRequest queryClientsRequest = new QueryClientsRequest();
-		queryClientsRequest.setJsonrpc(2);
-		queryClientsRequest.setField("clientType");
-		queryClientsRequest.setOperation("is");
-		queryClientsRequest.setValue("STB");
-		queryClientsRequest.getInformation().add("hardware");
-		queryClientsRequest.getInformation().add("network");
-		queryClientsRequest.getInformation().add("activity");
-		queryClientsRequest.getInformation().add("services");
-		queryClientsRequest.setClientNumber(String.valueOf(TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD));
-		int devicesPerPollingIntervalQuantity = IntMath.divide(cacheClients.size(), localPollingInterval, RoundingMode.CEILING);
-		queryClientsRequest.setPage(String.valueOf(currentPhase * TriplePlayConstrant.MAX_THREAD_QUANTITY + threadNumber + 1));
-		try {
-			String response = doPost(TriplePlayURL.BASE_URI, queryClientsRequest.buildRequest());
-			MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
-			updateCacheClient(monitoringData.getClientWrapper().getClients());
-		} catch (Exception e) {
-			throw new ResourceNotReachableException(e.getMessage(), e);
+	/**
+	 * Retrieve information of the clients in a thread
+	 *
+	 * @param clientIps List client will be get information in a thread
+	 */
+	private void retrieveClient(List<String> clientIps, int threadNumber) {
+		int clientNumber = 0;
+		while (clientNumber < clientIps.size()) {
+			QueryClientRequestBodyV2 queryClientRequest = new QueryClientRequestBodyV2();
+			queryClientRequest.setJsonrpc(TriplePlayConstrant.JSON_RPC);
+			for (int i = 0; i < TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_REQUEST && clientNumber < clientIps.size(); ++i) {
+				queryClientRequest.getClientIp().add(clientIps.get(clientNumber));
+				++clientNumber;
+			}
+			queryClientRequest.getInformation().add(TriplePlayConstrant.HARDWARE_INFORMATION);
+			queryClientRequest.getInformation().add(TriplePlayConstrant.SERVICES_INFORMATION);
+			queryClientRequest.getInformation().add(TriplePlayConstrant.ACTIVITY_INFORMATION);
+			queryClientRequest.getInformation().add(TriplePlayConstrant.NETWORK_INFORMATION);
+			try {
+				String requestBody = queryClientRequest.buildRequestBody();
+				String response = doPost(TriplePlayURL.BASE_URI, requestBody);
+				MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
+				updateCachedClients(monitoringData.getClientWrapper().getClients(),true);
+			} catch (Exception e) {
+				throw new ResourceNotReachableException(e.getMessage(), e);
+			}
 		}
-
 	}
 
 	/**
 	 * calculating thread quantity
 	 */
 	private int calculatingThreadQuantity() {
-		if (cacheClients.isEmpty()) {
+		if (cachedClients.isEmpty()) {
 			return TriplePlayConstrant.MIN_THREAD_QUANTITY;
 		}
-		if (cacheClients.size() / localPollingInterval < TriplePlayConstrant.MAX_THREAD_QUANTITY * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD) {
-			return IntMath.divide(cacheClients.size(), localPollingInterval * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD, RoundingMode.CEILING);
+		if (cachedClients.size() / localPollingInterval < TriplePlayConstrant.MAX_THREAD_QUANTITY * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD) {
+			return IntMath.divide(cachedClients.size(), localPollingInterval * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD, RoundingMode.CEILING);
 		}
 		return TriplePlayConstrant.MAX_THREAD_QUANTITY;
 	}
@@ -136,10 +192,8 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 	 * calculating minimum of polling interval
 	 */
 	private int calculatingMinPollingInterval() {
-		if (!cacheClients.isEmpty()) {
-			return IntMath.divide(cacheClients.size()
-					, TriplePlayConstrant.MAX_THREAD_QUANTITY * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD
-					, RoundingMode.CEILING);
+		if (!cachedClients.isEmpty()) {
+			return IntMath.divide(cachedClients.size(), TriplePlayConstrant.MAX_THREAD_QUANTITY * TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD, RoundingMode.CEILING);
 		}
 		return TriplePlayConstrant.MIN_POLLING_INTERVAL;
 	}
@@ -170,6 +224,7 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 
 	@Override
 	public List<Statistics> getMultipleStatistics() throws Exception {
+		long time1 = System.currentTimeMillis();
 		if (executorService != null) {
 			for (Future future : clientExecutionPool) {
 				future.cancel(true);
@@ -179,34 +234,73 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 		try {
 			if (!isEmergencyDelivery) {
 				Map<String, String> stats = new HashMap<>();
-				int currentSizeCacheClients = cacheClients.size();
+				int currentSizeCacheClients = cachedClients.size();
 				retrieveClients();
 				retrieveService();
 				localPollingInterval = calculatingLocalPollingInterval();
 				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
 				//Multithread for get information of client
-				if (executorService == null || currentSizeCacheClients != cacheClients.size()) {
-					executorService = Executors.newFixedThreadPool(deviceStatisticsCollectionThreads);
-				}
-				for (int threadNumber = 0; threadNumber < deviceStatisticsCollectionThreads; threadNumber++) {
-					Future future = executorService.submit(new ClientLoader(threadNumber));
-					clientExecutionPool.add(future);
-				}
-				currentPhase = (currentPhase + 1) % localPollingInterval;
+				retrieveInformationOfAllClients(currentSizeCacheClients);
+				System.out.println("Current client ip: " + lastClientIp);
 			}
 			isEmergencyDelivery = false;
 		} finally {
 			reentrantLock.unlock();
 		}
+		long time2 = System.currentTimeMillis();
+		System.out.println("Time of getMultiStatics: " + (time2 - time1));
 		return null;
 	}
 
+	/**
+	 * Retrieve information of all clients
+	 *
+	 * @param currentSizeCachedClients Current size of cachedClients List, this param use to check number of clients was change or not
+	 */
+	private void retrieveInformationOfAllClients(int currentSizeCachedClients) {
+		if (executorService == null || currentSizeCachedClients != cachedClients.size()) {
+			executorService = Executors.newFixedThreadPool(deviceStatisticsCollectionThreads);
+		}
+
+		String lastClientKey = lastClientIp != null ? cachedClients.floorKey(lastClientIp) : null;
+		if (cachedClients.size() == 0) {
+			lastClientIp = null;
+			return;
+		}
+
+		Iterator<Entry<String, Client>> cacheClientIt = cachedClients.entrySet().iterator();
+
+		String itClient = null;
+		if (lastClientKey != null) {
+			while (cacheClientIt.hasNext()) {
+				if (cacheClientIt.next().getKey() == lastClientKey) {
+					break;
+				}
+			}
+		}
+
+		for (int threadNumber = 0; threadNumber < deviceStatisticsCollectionThreads && cacheClientIt.hasNext(); ++threadNumber) {
+			List<String> requestClientIp = new ArrayList<>();
+			for (int clientNumber = 0; clientNumber < TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD && cacheClientIt.hasNext(); ++clientNumber) {
+				itClient = cacheClientIt.next().getKey();
+				requestClientIp.add(itClient);
+			}
+			executorService.submit(new ClientLoader(requestClientIp, threadNumber));
+		}
+
+		//Update next ClientIp to next getMultipleStatistics
+		lastClientIp = itClient != cachedClients.lastKey() ? itClient : null;
+	}
+
+	/**
+	 * Retrieve all service
+	 */
 	private void retrieveService() {
 		try {
-			GetAllServicesRequest requestBody = new GetAllServicesRequest();
-			requestBody.setJsonrpc(2);
+			GetAllServicesRequestBody requestBody = new GetAllServicesRequestBody();
+			requestBody.setJsonrpc(TriplePlayConstrant.JSON_RPC);
 			requestBody.setParam(-1);
-			String response = doPost(TriplePlayURL.BASE_URI, requestBody.buildRequest());
+			String response = doPost(TriplePlayURL.BASE_URI, requestBody.buildRequestBody());
 			ServiceWrapper monitoringData = objectMapper.readValue(response, ServiceWrapper.class);
 			cacheServices = monitoringData.getServices();
 		} catch (Exception e) {
@@ -214,61 +308,51 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 		}
 	}
 
+	/**
+	 * Get display name of locale
+	 *
+	 * @param locale locale need to get display name, it must follow format locale in response of tripleplay
+	 */
 	private String getDisplayLocalByLocale(String locale) {
-		if (locale.contains("_")) {
-			Locale local = new Locale(locale.substring(0, locale.indexOf("_")), locale.substring(locale.indexOf("_") + 1));
+		if (locale.contains(TriplePlayConstrant.SPLIT_LOCALE)) {
+			Locale local = new Locale(locale.substring(0, locale.indexOf(TriplePlayConstrant.SPLIT_LOCALE)), locale.substring(locale.indexOf(TriplePlayConstrant.SPLIT_LOCALE) + 1));
 			return local.getDisplayName();
 		}
 		return null;
 	}
 
-	public double calcTimePerRequest(int numRequest) throws Exception {
-		QueryClientsRequest queryClientsRequest = new QueryClientsRequest();
-		queryClientsRequest.setJsonrpc(2);
-		queryClientsRequest.setField("clientType");
-		queryClientsRequest.setOperation("is");
-		queryClientsRequest.setValue("STB");
-		queryClientsRequest.getInformation().add("hardware");
-		queryClientsRequest.getInformation().add("network");
-		queryClientsRequest.getInformation().add("activity");
-		queryClientsRequest.getInformation().add("configuration");
-		queryClientsRequest.getInformation().add("services");
-
-		long sumSecond = 0;
-		for (int i = 0; i < numRequest; ++i) {
-			long time1 = System.currentTimeMillis();
-			String response = doPost(TriplePlayURL.BASE_URI,
-					"{\"jsonrpc\":2.0,\"method\":\"QueryClients\",\"params\":[[{\"field\":\"clientType\",\"operator\":\"is\",\"value\":\"STB\"},{\"logical\":\"OR\",\"field\":\"clientType\",\"operator\":\"is\",\"value\":\"MVP\"},{\"logical\":\"OR\",\"field\":\"clientType\",\"operator\":\"is\",\"value\":\"PC\"}],{\"hardware\":true,\"network\":true,\"activity\":true,\"services\":true,\"configuration\":true},\"ipAddress\",-1]}");
-			long time2 = System.currentTimeMillis();
-			sumSecond += (time2 - time1);
-			MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
-			System.out.println("Num clients: " + monitoringData.getClientWrapper().getClients().size());
-			System.out.println("Request " + (i + 1) + ": " + (time2 - time1));
-			if (time2 - time1 > 5000) {
-				System.out.println(response);
-			}
-		}
-		return sumSecond / numRequest;
-	}
-
+	/**
+	 * Retrieve number of clients and ips of them
+	 */
 	private void retrieveClients() {
 		try {
-			QueryClientsListRequest queryClientsListRequest = new QueryClientsListRequest();
-			queryClientsListRequest.setJsonrpc(2);
+			QueryClientsListRequestBody queryClientsListRequest = new QueryClientsListRequestBody();
+			queryClientsListRequest.setJsonrpc(TriplePlayConstrant.JSON_RPC);
 			queryClientsListRequest.setField("clientType");
 			queryClientsListRequest.setOperation("is");
-			queryClientsListRequest.setValue("STB");
-			String response = doPost(TriplePlayURL.BASE_URI, queryClientsListRequest.buildRequest());
+			queryClientsListRequest.setValue(TriplePlayConstrant.SET_TOP_BOX);
+			queryClientsListRequest.getInformation().add("network");
+			String response = doPost(TriplePlayURL.BASE_URI, queryClientsListRequest.buildRequestBody());
 			MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
-			updateCacheClient(monitoringData.getClientWrapper().getClients());
+
+			if (monitoringData == null) {
+				return;
+			}
+			//Remove All Client was removed on Server
+			HashMap<String, String> clientsIps = new HashMap<>();
+			for (Client client : monitoringData.getClientWrapper().getClients()) {
+				clientsIps.put(client.getNetwork().getIp(), null);
+			}
+			for (Entry<String, Client> clientEntry : cachedClients.entrySet()) {
+				if (!clientsIps.containsKey(clientEntry.getKey())) {
+					cachedClients.remove(clientEntry.getValue());
+				}
+			}
+
+			updateCachedClients(monitoringData.getClientWrapper().getClients(),false);
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
-	}
-
-	private String buildDeviceFullPath(String path) {
-
-		return "";
 	}
 
 	@Override
@@ -288,11 +372,16 @@ public class Communicator extends RestCommunicator implements Aggregator, Monito
 
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
-		return null;
+		if (logger.isWarnEnabled()) {
+			logger.warn("Start call retrieveMultipleStatistic");
+		}
+		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
+
 	}
 
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
+		// return retrieveMultipleStatistics().stream().filter(aggregatedDevice -> listDeviceId.contains(aggregatedDevice.getDeviceId())).collect(Collectors.toList());
 		return null;
 	}
 }

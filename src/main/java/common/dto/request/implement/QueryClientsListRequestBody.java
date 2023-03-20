@@ -3,7 +3,7 @@ package common.dto.request.implement;
 import java.util.ArrayList;
 import java.util.List;
 
-import common.dto.request.Request;
+import common.dto.request.RequestBody;
 
 import com.avispl.symphony.dal.util.StringUtils;
 
@@ -14,7 +14,7 @@ import com.avispl.symphony.dal.util.StringUtils;
  * Created on 3/16/2023
  * @since 1.0.0
  */
-public class QueryClientsListRequest implements Request {
+public class QueryClientsListRequestBody implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD="QueryClients";
 	private String field;
@@ -122,15 +122,29 @@ public class QueryClientsListRequest implements Request {
 	}
 
 	@Override
-	public String buildRequest() {
+	public String buildRequestBody() {
 		StringBuilder informationString=new StringBuilder();
 		for (String info:this.information)
 			informationString.append("\""+info+"\":true,");
 		if (!StringUtils.isNullOrEmpty(informationString.toString()))
 			informationString.deleteCharAt(informationString.length()-1);
 		StringBuilder request= new StringBuilder(String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\""
-				+ "params\":[[{\"field\":\"%s\",\"operator\":\"%s\",\"value\":\"%s\"}],{%s"
+				+ "params\":[[{\"field\":\"%s\",\"operator\":\"%s\",\"value\":\"%s\"}\n"
+//				+ "      ,{\n"
+//				+ "        \"logical\": \"OR\",\n"
+//				+ "        \"field\": \"clientType\",\n"
+//				+ "        \"operator\": \"is\",\n"
+//				+ "        \"value\": \"MVP\"\n"
+//				+ "      },\n"
+//				+ "      {\n"
+//				+ "        \"logical\": \"OR\",\n"
+//				+ "        \"field\": \"clientType\",\n"
+//				+ "        \"operator\": \"is\",\n"
+//				+ "        \"value\": \"PC\"\n"
+//				+ "      }"
+				+ "],{%s"
 				+ "},\"ipAddress\",-1]}",this.jsonrpc,this.METHOD,this.field,this.operation,this.value,informationString));
+		//System.out.println(request.toString());
 		return request.toString();
 	}
 }

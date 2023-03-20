@@ -3,7 +3,7 @@ package common.dto.request.implement;
 import java.util.ArrayList;
 import java.util.List;
 
-import common.dto.request.Request;
+import common.dto.request.RequestBody;
 
 /**
  * QueryClientsRequest
@@ -12,7 +12,7 @@ import common.dto.request.Request;
  * Created on 3/15/2023
  * @since 1.0.0
  */
-public class QueryClientsRequest implements Request {
+public class QueryClientsRequestBody implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD="QueryClients";
 	private String field;
@@ -22,7 +22,7 @@ public class QueryClientsRequest implements Request {
 	private String clientNumber;
 	private String page;
 
-	public QueryClientsRequest() {
+	public QueryClientsRequestBody() {
 	}
 
 	/**
@@ -161,7 +161,7 @@ public class QueryClientsRequest implements Request {
 	}
 
 	@Override
-	public String buildRequest() {
+	public String buildRequestBody() {
 		StringBuilder informationString=new StringBuilder();
 		for (String info:this.information)
 			informationString.append("\""+info+"\":true,");

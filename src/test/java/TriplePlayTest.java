@@ -22,11 +22,6 @@ public class TriplePlayTest {
 		communicator.init();
 	}
 
-	@Test
-	void testGetSecondPerRequest() throws Exception {
-		System.out.println(communicator.calcTimePerRequest(10));
-	}
-
 	@AfterEach()
 	public void destroy() throws Exception {
 		communicator.disconnect();
@@ -35,5 +30,16 @@ public class TriplePlayTest {
 	@Test
 	public void testRun() throws Exception {
 		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
+		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
+		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
+		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
+		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
+		communicator.getMultipleStatistics();
+		Thread.sleep(2000);
 	}
 }
