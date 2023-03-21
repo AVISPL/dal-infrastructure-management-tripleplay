@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.math.IntMath;
+import common.ChanneInforMetric;
 import common.ClientInfoMetric;
 import common.HardwareMetric;
 import common.NetworkMetric;
@@ -30,6 +31,7 @@ import common.dto.request.implement.QueryClientRequestBodyV2;
 import common.dto.request.implement.QueryClientsListRequestBody;
 
 import com.avispl.symphony.api.dal.control.Controller;
+import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
 import com.avispl.symphony.api.dal.dto.monitor.aggregator.AggregatedDevice;
@@ -38,6 +40,7 @@ import com.avispl.symphony.api.dal.monitor.Monitorable;
 import com.avispl.symphony.api.dal.monitor.aggregator.Aggregator;
 import com.avispl.symphony.dal.communicator.RestCommunicator;
 import com.avispl.symphony.dal.util.StringUtils;
+import com.avispl.symphony.dal.util.ControllablePropertyFactory;
 
 /**
  * Communicator
@@ -90,46 +93,139 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	private boolean isEmergencyDelivery = false;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
+	@Override
+	public List<Statistics> getMultipleStatistics() throws Exception {
+		if (executorService != null) {
+			for (Future future : clientExecutionPool) {
+				future.cancel(true);
+			}
+		}
+		reentrantLock.lock();
+		try {
+			if (!isEmergencyDelivery) {
+				int currentSizeCacheClients = cachedClients.size();
+				retrieveClients();
+				retrieveService();
+				localPollingInterval = calculatingLocalPollingInterval();
+				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
+				//Multithread for get information of client
+				retrieveInformationOfAllClients(currentSizeCacheClients);
+			}
+			isEmergencyDelivery = false;
+		} finally {
+			reentrantLock.unlock();
+		}
+		return null;
+	}
+
+	@Override
+	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
+
+	}
+
+	@Override
+	public void controlProperties(List<ControllableProperty> list) throws Exception {
+
+	}
+
+	@Override
+	protected void authenticate() throws Exception {
+
+	}
+
+	@Override
+	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
+		if (logger.isWarnEnabled()) {
+			logger.warn("Start call retrieveMultipleStatistic");
+		}
+		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
+
+	}
+
+	@Override
+	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
+		// return retrieveMultipleStatistics().stream().filter(aggregatedDevice -> listDeviceId.contains(aggregatedDevice.getDeviceId())).collect(Collectors.toList());
+		return null;
+	}
+
 	/**
 	 * Return value if value not null, else return NONE
+	 *
 	 * @param value value need to check null or not
-	 * @return
 	 */
-	private String getDefaultValueForNullOrEmpty(String value){
-		return StringUtils.isNullOrEmpty(value)?value:TriplePlayConstrant.NONE;
+	private String getDefaultValueForNullOrEmpty(String value) {
+		return StringUtils.isNullOrEmpty(value) ? value : TriplePlayConstrant.NONE;
 	}
-	private void updateCachedClients(List<Client> clients, boolean updateProperties) {
-		for (Client client : clients) {
-			if (!StringUtils.isNullOrEmpty(client.getLocale())) {
-				client.setLocale(getDisplayLocalByLocale(client.getLocale()));
-			}
-			// map clients to properties of Aggregated device.
-			if (updateProperties) {
-				AggregatedDevice aggregatedDevice = new AggregatedDevice();
-				Map<String, String> properties = new HashMap<>();
-				properties.put(ClientInfoMetric.DEVICE_ID.getName(), getDefaultValueForNullOrEmpty(client.getClientId()));
-				properties.put(ClientInfoMetric.DEVICE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getType()));
-				properties.put(ClientInfoMetric.LOCALE.getName(), getDefaultValueForNullOrEmpty(client.getLocale()));
-				properties.put(ClientInfoMetric.LOCALTION.getName(), getDefaultValueForNullOrEmpty(client.getLocation()));
-				if (client.getHardware()!=null){
-					properties.put(HardwareMetric.HARDWARE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getType()));
-					properties.put(HardwareMetric.HARDWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getHardwareVersion()));
-					properties.put(HardwareMetric.HARDWARE_MODEL.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getModel()));
-					properties.put(HardwareMetric.SOFTWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSoftwareVersion()));
-					properties.put(HardwareMetric.SERIAL_NUMBER.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSerialNumber()));
-				}
-				if (client.getNetwork()!=null){
-					properties.put(NetworkMetric.IP_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getIp()));
-					properties.put(NetworkMetric.MAC_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getMac()));
-					properties.put(NetworkMetric.DHCP_SUBNET.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getDhcpSubnet()));
-				}
-				aggregatedDevice.setProperties(properties);
 
-				cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
-			}
-
-			cachedClients.put(client.getNetwork().getIp(), client);
+	private void addClientToCachedClients(Client client) {
+		if (!StringUtils.isNullOrEmpty(client.getLocale())) {
+			client.setLocale(getDisplayLocalByLocale(client.getLocale()));
 		}
+		cachedClients.put(client.getNetwork().getIp(), client);
+	}
+
+	/**
+	 * Add advancedControllableProperties if advancedControllableProperties different empty
+	 *
+	 * @param advancedControllableProperties advancedControllableProperties is the list that store all controllable properties
+	 * @param stats store all statistics
+	 * @param property the property is item advancedControllableProperties
+	 * @return String response
+	 * @throws IllegalStateException when exception occur
+	 */
+	private void addAdvanceControlProperties(List<AdvancedControllableProperty> advancedControllableProperties, Map<String, String> stats, AdvancedControllableProperty property) {
+		if (property != null) {
+			for (AdvancedControllableProperty controllableProperty : advancedControllableProperties) {
+				if (controllableProperty.getName().equals(property.getName())) {
+					advancedControllableProperties.remove(controllableProperty);
+					break;
+				}
+			}
+			stats.put(property.getName(), TriplePlayConstrant.EMPTY);
+			advancedControllableProperties.add(property);
+		}
+	}
+
+	/**
+	 * Populate device monitoring
+	 *
+	 * @param properties properties of device
+	 * @param client client to get information for properties
+	 */
+	private void populateDeviceMonitoring(Map<String, String> properties, Client client) {
+		AggregatedDevice aggregatedDevice = new AggregatedDevice();
+		properties.put(ClientInfoMetric.DEVICE_ID.getName(), getDefaultValueForNullOrEmpty(client.getClientId()));
+		properties.put(ClientInfoMetric.DEVICE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getType()));
+		properties.put(ClientInfoMetric.LOCALE.getName(), getDefaultValueForNullOrEmpty(client.getLocale()));
+		properties.put(ClientInfoMetric.LOCALTION.getName(), getDefaultValueForNullOrEmpty(client.getLocation()));
+		if (client.getHardware() != null) {
+			properties.put(HardwareMetric.HARDWARE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getType()));
+			properties.put(HardwareMetric.HARDWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getHardwareVersion()));
+			properties.put(HardwareMetric.HARDWARE_MODEL.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getModel()));
+			properties.put(HardwareMetric.SOFTWARE_VERSION.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSoftwareVersion()));
+			properties.put(HardwareMetric.SERIAL_NUMBER.getName(), getDefaultValueForNullOrEmpty(client.getHardware().getSerialNumber()));
+		}
+		if (client.getNetwork() != null) {
+			properties.put(NetworkMetric.IP_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getIp()));
+			properties.put(NetworkMetric.MAC_ADDRESS.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getMac()));
+			properties.put(NetworkMetric.DHCP_SUBNET.getName(), getDefaultValueForNullOrEmpty(client.getNetwork().getDhcpSubnet()));
+		}
+		aggregatedDevice.setProperties(properties);
+
+		cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
+	}
+
+	private void populateDeviceControlling(Map<String, String> properties, Client client, List<AdvancedControllableProperty> advancedControllableProperties) {
+		List<String> serviceNames = new ArrayList<>();
+		for (Service service : client.getServices()) {
+			serviceNames.add(service.getName());
+		}
+		addAdvanceControlProperties(advancedControllableProperties, properties,
+				ControllablePropertyFactory.createDropdown(ChanneInforMetric.SELECT_CHANNEL.getName(),
+						serviceNames, client.getActivity().getLastService().getName()));
+		addAdvanceControlProperties(advancedControllableProperties, properties,
+				ControllablePropertyFactory.createDropdown(ChanneInforMetric.CURRENT_CHANNEL.getName(),
+						serviceNames, client.getActivity().getCurrentService().getName()));
 	}
 
 	/**
@@ -154,7 +250,15 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				String requestBody = queryClientRequest.buildRequestBody();
 				String response = doPost(TriplePlayURL.BASE_URI, requestBody);
 				MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
-				updateCachedClients(monitoringData.getClientWrapper().getClients(),true);
+				for (Client client : monitoringData.getClientWrapper().getClients()) {
+					addClientToCachedClients(client);
+					Map<String, String> properties = new HashMap<>();
+					populateDeviceMonitoring(properties, client);
+					populateDeviceControlling(properties, client, new ArrayList<>());
+					AggregatedDevice aggregatedDevice = new AggregatedDevice();
+					aggregatedDevice.setProperties(properties);
+					cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
+				}
 			} catch (Exception e) {
 				throw new ResourceNotReachableException(e.getMessage(), e);
 			}
@@ -206,35 +310,6 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		} catch (Exception e) {
 			throw new IllegalArgumentException(String.format("Unexpected pollingInterval value: %s", pollingInterval));
 		}
-	}
-
-	@Override
-	public List<Statistics> getMultipleStatistics() throws Exception {
-		long time1 = System.currentTimeMillis();
-		if (executorService != null) {
-			for (Future future : clientExecutionPool) {
-				future.cancel(true);
-			}
-		}
-		reentrantLock.lock();
-		try {
-			if (!isEmergencyDelivery) {
-				int currentSizeCacheClients = cachedClients.size();
-				retrieveClients();
-				retrieveService();
-				localPollingInterval = calculatingLocalPollingInterval();
-				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
-				//Multithread for get information of client
-				retrieveInformationOfAllClients(currentSizeCacheClients);
-				System.out.println("Current client ip: " + lastClientIp);
-			}
-			isEmergencyDelivery = false;
-		} finally {
-			reentrantLock.unlock();
-		}
-		long time2 = System.currentTimeMillis();
-		System.out.println("Time of getMultiStatics: " + (time2 - time1));
-		return null;
 	}
 
 	/**
@@ -334,40 +409,11 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 					cachedClients.remove(clientEntry.getValue());
 				}
 			}
-
-			updateCachedClients(monitoringData.getClientWrapper().getClients(),false);
+			for (Client client : monitoringData.getClientWrapper().getClients()) {
+				addClientToCachedClients(client);
+			}
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
-	}
-
-	@Override
-	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
-
-	}
-
-	@Override
-	public void controlProperties(List<ControllableProperty> list) throws Exception {
-
-	}
-
-	@Override
-	protected void authenticate() throws Exception {
-
-	}
-
-	@Override
-	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
-		if (logger.isWarnEnabled()) {
-			logger.warn("Start call retrieveMultipleStatistic");
-		}
-		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
-
-	}
-
-	@Override
-	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
-		// return retrieveMultipleStatistics().stream().filter(aggregatedDevice -> listDeviceId.contains(aggregatedDevice.getDeviceId())).collect(Collectors.toList());
-		return null;
 	}
 }

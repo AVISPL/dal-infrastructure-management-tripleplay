@@ -12,6 +12,7 @@
 		public static final String SPLIT_LOCALE = "_";
 		public static final String SET_TOP_BOX = "STB";
 		public static final int JSON_RPC = 2;
+		public static final String EMPTY="";
 
 		//Information
 		public static final String HARDWARE_INFORMATION = "hardware";
