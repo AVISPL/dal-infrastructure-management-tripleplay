@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
+ */
+
 package common;
 
 /**
