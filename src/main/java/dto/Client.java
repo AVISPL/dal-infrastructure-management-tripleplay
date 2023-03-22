@@ -1,5 +1,6 @@
-package common.dto;
+package dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -37,7 +38,7 @@ public class Client implements Comparable<Client> {
 	@JsonAlias("activity")
 	private Activity activity;
 	@JsonAlias("services")
-	private List<Service> services;
+	private List<Service> services = new ArrayList<>();
 
 	/**
 	 * Retrieves {@link #clientId}

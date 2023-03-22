@@ -1,5 +1,12 @@
-package common;
+package common.monitoring;
 
+/**
+ * HardwareMetric
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 3/22/2023
+ * @since 1.0.0
+ */
 public enum HardwareMetric {
 	HARDWARE_TYPE("HardwareType"),
 	HARDWARE_VERSION("HardwareVersion"),

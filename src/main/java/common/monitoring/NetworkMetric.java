@@ -1,5 +1,12 @@
-package common;
+package common.monitoring;
 
+/**
+ * NetworkMetric
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 3/22/2023
+ * @since 1.0.0
+ */
 public enum NetworkMetric {
 	IP_ADDRESS("IPAddress"),
 	MAC_ADDRESS("MACAddress"),

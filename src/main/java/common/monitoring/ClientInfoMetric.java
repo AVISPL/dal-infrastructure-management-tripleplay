@@ -1,4 +1,4 @@
-package common;
+package common.monitoring;
 
 /**
  * ClientMetric
@@ -11,7 +11,7 @@ public enum ClientInfoMetric {
 	DEVICE_ID("deviceId"),
 	DEVICE_TYPE("deviceType"),
 	LOCALE("Locale"),
-	LOCALTION("location");
+	LOCALTION("Location");
 
 	private final String name;
 

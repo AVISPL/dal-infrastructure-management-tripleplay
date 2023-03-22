@@ -1,9 +1,9 @@
-package common.dto.request.implement;
+package dto.request.implement;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import common.dto.request.RequestBody;
+import dto.request.RequestBody;
 
 import com.avispl.symphony.dal.util.StringUtils;
 

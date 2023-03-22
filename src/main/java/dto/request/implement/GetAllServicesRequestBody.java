@@ -1,6 +1,6 @@
-package common.dto.request.implement;
+package dto.request.implement;
 
-import common.dto.request.RequestBody;
+import dto.request.RequestBody;
 
 /**
  * GetAllServicesRequest

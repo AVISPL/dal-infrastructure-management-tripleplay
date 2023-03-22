@@ -1,9 +1,9 @@
-package common.dto.request.implement;
+package dto.request.implement;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import common.dto.request.RequestBody;
+import dto.request.RequestBody;
 
 import com.avispl.symphony.dal.util.StringUtils;
 
@@ -17,25 +17,25 @@ import com.avispl.symphony.dal.util.StringUtils;
 public class QueryClientRequestBodyV2 implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD = "QueryClients";
-	private List<String> clientIp = new ArrayList<>();
+	private List<String> clientMAC = new ArrayList<>();
 	private List<String> information = new ArrayList<>();
 
 	/**
-	 * Retrieves {@link #clientIp}
+	 * Retrieves {@link #clientMAC}
 	 *
-	 * @return value of {@link #clientIp}
+	 * @return value of {@link #clientMAC}
 	 */
-	public List<String> getClientIp() {
-		return clientIp;
+	public List<String> getClientMAC() {
+		return clientMAC;
 	}
 
 	/**
-	 * Sets {@link #clientIp} value
+	 * Sets {@link #clientMAC} value
 	 *
-	 * @param clientIp new value of {@link #clientIp}
+	 * @param clientMAC new value of {@link #clientMAC}
 	 */
-	public void setClientIp(List<String> clientIp) {
-		this.clientIp = clientIp;
+	public void setClientMAC(List<String> clientMAC) {
+		this.clientMAC = clientMAC;
 	}
 
 	/**
@@ -88,17 +88,17 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 
 		//Generate params string
 		StringBuilder params = new StringBuilder();
-		for (int i = 0; i < this.clientIp.size(); ++i) {
+		for (int i = 0; i < this.clientMAC.size(); ++i) {
 			params.append("{");
 			if (i != 0) {
 				params.append("\"logical\":\"OR\",");
 			}
 			params.append(String.format("\n"
-					+ "        \"field\": \"ipAddress\",\n"
+					+ "        \"field\": \"macAddress\",\n"
 					+ "        \"operator\": \"is\",\n"
 					+ "        \"value\": \"%s\"\n"
-					+ "      }", this.clientIp.get(i)));
-			if (i != clientIp.size() - 1) {
+					+ "      }", this.clientMAC.get(i)));
+			if (i != clientMAC.size() - 1) {
 				params.append(",");
 			}
 		}
@@ -118,11 +118,11 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 		return request.toString();
 	}
 
-	public String getClientIpListToString()
-	{
+	public String getClientIpListToString() {
 		String temp = "";
-		for (String ip : this.clientIp)
-			temp=temp+ip+" ";
+		for (String ip : this.clientMAC) {
+			temp = temp + ip + " ";
+		}
 		return temp;
 	}
 }

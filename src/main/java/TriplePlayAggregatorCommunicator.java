@@ -1,11 +1,13 @@
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -14,21 +16,29 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.math.IntMath;
-import common.ChanneInforMetric;
-import common.ClientInfoMetric;
-import common.HardwareMetric;
-import common.NetworkMetric;
+import common.controlling.AggregatorGroupControllingMetric;
+import common.controlling.ChannelInfoMetric;
+import common.monitoring.ClientInfoMetric;
+import common.monitoring.HardwareMetric;
+import common.monitoring.NetworkMetric;
 import common.TriplePlayConstrant;
 import common.TriplePlayURL;
-import common.dto.Client;
-import common.dto.MonitoringData;
-import common.dto.Service;
-import common.dto.ServiceWrapper;
-import common.dto.request.implement.GetAllServicesRequestBody;
-import common.dto.request.implement.QueryClientRequestBodyV2;
-import common.dto.request.implement.QueryClientsListRequestBody;
+import dto.Activity;
+import dto.Client;
+import dto.MonitoringData;
+import dto.Service;
+import dto.ServiceWrapper;
+import dto.request.implement.ControllingRequest;
+import dto.request.implement.GetAllServicesRequestBody;
+import dto.request.implement.QueryClientRequestBodyV2;
+import dto.request.implement.QueryClientsListRequestBody;
 
 import com.avispl.symphony.api.dal.control.Controller;
 import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty;
@@ -85,11 +95,11 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private volatile String pollingInterval;
 
-	private volatile String lastClientIp;
+	private volatile String lastClientMac;
 	private List<Future> clientExecutionPool = new ArrayList<>();
 	private TreeMap<String, Client> cachedClients = new TreeMap<>();
 	private Map<String, AggregatedDevice> cachedAggregatedDevices = new ConcurrentHashMap<>();
-	private List<Service> cachedServices = new ArrayList<>();
+	private HashMap<String, Service> cachedServices = new HashMap<>();
 	private boolean isEmergencyDelivery = false;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -108,7 +118,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				retrieveService();
 				localPollingInterval = calculatingLocalPollingInterval();
 				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
-				//Multithread for get information of client
+				//Multi thread for get information of client
 				retrieveInformationOfAllClients(currentSizeCacheClients);
 			}
 			isEmergencyDelivery = false;
@@ -120,12 +130,25 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
-
+		String property = controllableProperty.getProperty();
+		String value = String.valueOf(controllableProperty.getValue());
+		String deviceId = controllableProperty.getDeviceId();
+		reentrantLock.lock();
+		try {
+			if (StringUtils.isNullOrEmpty(deviceId) || !cachedAggregatedDevices.containsKey(deviceId)) {
+				return;
+			}
+			aggregatedDeviceControl(property, value, cachedAggregatedDevices.get(deviceId));
+		} finally {
+			reentrantLock.unlock();
+		}
 	}
 
 	@Override
 	public void controlProperties(List<ControllableProperty> list) throws Exception {
-
+		for (ControllableProperty controllableProperty : list) {
+			controlProperty(controllableProperty);
+		}
 	}
 
 	@Override
@@ -144,7 +167,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
-		// return retrieveMultipleStatistics().stream().filter(aggregatedDevice -> listDeviceId.contains(aggregatedDevice.getDeviceId())).collect(Collectors.toList());
+//		 return retrieveMultipleStatistics().stream().filter(aggregatedDevice -> listDeviceId.contains(aggregatedDevice.getDeviceId())).collect(Collectors.toList());
 		return null;
 	}
 
@@ -154,14 +177,30 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 * @param value value need to check null or not
 	 */
 	private String getDefaultValueForNullOrEmpty(String value) {
-		return StringUtils.isNullOrEmpty(value) ? value : TriplePlayConstrant.NONE;
+		return StringUtils.isNotNullOrEmpty(value) ? value : TriplePlayConstrant.NONE;
 	}
 
+	/**
+	 * Get key value of client in cached client list
+	 *
+	 * @param client client to get key value
+	 */
+	private String getKeyInCachedClients(Client client) {
+		return Optional.ofNullable(client.getNetwork().getMac()).orElse(null);
+	}
+
+	/**
+	 * Add client to cached client list
+	 *
+	 * @param client client need to add
+	 */
 	private void addClientToCachedClients(Client client) {
 		if (!StringUtils.isNullOrEmpty(client.getLocale())) {
 			client.setLocale(getDisplayLocalByLocale(client.getLocale()));
 		}
-		cachedClients.put(client.getNetwork().getIp(), client);
+		if (getKeyInCachedClients(client) != null) {
+			cachedClients.put(getKeyInCachedClients(client), client);
+		}
 	}
 
 	/**
@@ -215,17 +254,26 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
 	}
 
+	/**
+	 * Populate device controlling
+	 *
+	 * @param properties properties of device
+	 * @param client client to get information for properties and advancedControllableProperties
+	 * @param advancedControllableProperties advancedControllableProperties to add controlling property of device
+	 */
 	private void populateDeviceControlling(Map<String, String> properties, Client client, List<AdvancedControllableProperty> advancedControllableProperties) {
+		if (client.getActivity() == null || client.getServices().isEmpty()) {
+			return;
+		}
 		List<String> serviceNames = new ArrayList<>();
 		for (Service service : client.getServices()) {
 			serviceNames.add(service.getName());
 		}
+
 		addAdvanceControlProperties(advancedControllableProperties, properties,
-				ControllablePropertyFactory.createDropdown(ChanneInforMetric.SELECT_CHANNEL.getName(),
-						serviceNames, client.getActivity().getLastService().getName()));
-		addAdvanceControlProperties(advancedControllableProperties, properties,
-				ControllablePropertyFactory.createDropdown(ChanneInforMetric.CURRENT_CHANNEL.getName(),
-						serviceNames, client.getActivity().getCurrentService().getName()));
+				ControllablePropertyFactory.createDropdown(ChannelInfoMetric.SELECT_CHANNEL.getName(),
+						serviceNames, Optional.ofNullable(client.getActivity()).map(Activity::getCurrentService).map(Service::getName).orElse(TriplePlayConstrant.NONE)));
+		properties.put(ChannelInfoMetric.LAST_CHANNEL.getName(), Optional.ofNullable(client.getActivity()).map(Activity::getLastService).map(Service::getName).orElse(TriplePlayConstrant.NONE));
 	}
 
 	/**
@@ -239,7 +287,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			QueryClientRequestBodyV2 queryClientRequest = new QueryClientRequestBodyV2();
 			queryClientRequest.setJsonrpc(TriplePlayConstrant.JSON_RPC);
 			for (int i = 0; i < TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_REQUEST && clientNumber < clientIps.size(); ++i) {
-				queryClientRequest.getClientIp().add(clientIps.get(clientNumber));
+				queryClientRequest.getClientMAC().add(clientIps.get(clientNumber));
 				++clientNumber;
 			}
 			queryClientRequest.getInformation().add(TriplePlayConstrant.HARDWARE_INFORMATION);
@@ -251,12 +299,15 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				String response = doPost(TriplePlayURL.BASE_URI, requestBody);
 				MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
 				for (Client client : monitoringData.getClientWrapper().getClients()) {
+					convertServicetoAllService(client);
 					addClientToCachedClients(client);
 					Map<String, String> properties = new HashMap<>();
 					populateDeviceMonitoring(properties, client);
 					populateDeviceControlling(properties, client, new ArrayList<>());
 					AggregatedDevice aggregatedDevice = new AggregatedDevice();
 					aggregatedDevice.setProperties(properties);
+					aggregatedDevice.setDeviceId(getDefaultValueForNullOrEmpty(client.getClientId()));
+					aggregatedDevice.setType(getDefaultValueForNullOrEmpty(client.getType()));
 					cachedAggregatedDevices.put(client.getClientId(), aggregatedDevice);
 				}
 			} catch (Exception e) {
@@ -322,9 +373,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			executorService = Executors.newFixedThreadPool(deviceStatisticsCollectionThreads);
 		}
 
-		String lastClientKey = lastClientIp != null ? cachedClients.floorKey(lastClientIp) : null;
+		String lastClientKey = lastClientMac != null ? cachedClients.floorKey(lastClientMac) : null;
 		if (cachedClients.size() == 0) {
-			lastClientIp = null;
+			lastClientMac = null;
 			return;
 		}
 
@@ -340,16 +391,16 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 
 		for (int threadNumber = 0; threadNumber < deviceStatisticsCollectionThreads && cacheClientIt.hasNext(); ++threadNumber) {
-			List<String> requestClientIp = new ArrayList<>();
+			List<String> requestClientMac = new ArrayList<>();
 			for (int clientNumber = 0; clientNumber < TriplePlayConstrant.MAX_CLIENT_QUANTITY_PER_THREAD && cacheClientIt.hasNext(); ++clientNumber) {
 				itClient = cacheClientIt.next().getKey();
-				requestClientIp.add(itClient);
+				requestClientMac.add(itClient);
 			}
-			executorService.submit(new ClientLoader(requestClientIp));
+			executorService.submit(new ClientLoader(requestClientMac));
 		}
 
 		//Update next ClientIp to next getMultipleStatistics
-		lastClientIp = itClient != cachedClients.lastKey() ? itClient : null;
+		lastClientMac = itClient != cachedClients.lastKey() ? itClient : null;
 	}
 
 	/**
@@ -362,7 +413,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			requestBody.setParam(-1);
 			String response = doPost(TriplePlayURL.BASE_URI, requestBody.buildRequestBody());
 			ServiceWrapper monitoringData = objectMapper.readValue(response, ServiceWrapper.class);
-			cachedServices = monitoringData.getServices();
+			for (Service service : monitoringData.getServices()) {
+				cachedServices.put(String.valueOf(service.getId()), service);
+			}
 			logger.debug(cachedServices);
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
@@ -376,7 +429,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private String getDisplayLocalByLocale(String locale) {
 		if (locale.contains(TriplePlayConstrant.SPLIT_LOCALE)) {
-			Locale local = new Locale(locale.substring(0, locale.indexOf(TriplePlayConstrant.SPLIT_LOCALE)), locale.substring(locale.indexOf(TriplePlayConstrant.SPLIT_LOCALE) + 1));
+			Locale local = new Locale(locale.substring(0, locale.lastIndexOf(TriplePlayConstrant.SPLIT_LOCALE)), locale.substring(locale.lastIndexOf(TriplePlayConstrant.SPLIT_LOCALE) + 1));
 			return local.getDisplayName();
 		}
 		return null;
@@ -400,20 +453,97 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				return;
 			}
 			//Remove All Client was removed on Server
-			HashMap<String, String> clientsIps = new HashMap<>();
+			HashSet<String> clientMACs = new HashSet<>();
 			for (Client client : monitoringData.getClientWrapper().getClients()) {
-				clientsIps.put(client.getNetwork().getIp(), null);
+				clientMACs.add(getKeyInCachedClients(client));
 			}
 			for (Entry<String, Client> clientEntry : cachedClients.entrySet()) {
-				if (!clientsIps.containsKey(clientEntry.getKey())) {
-					cachedClients.remove(clientEntry.getValue());
+				if (!clientMACs.contains(clientEntry.getKey())) {
+					cachedClients.remove(clientEntry.getKey());
 				}
 			}
 			for (Client client : monitoringData.getClientWrapper().getClients()) {
-				addClientToCachedClients(client);
+				if (!cachedClients.containsKey(getKeyInCachedClients(client))) {
+					cachedClients.put(getKeyInCachedClients(client), client);
+				}
 			}
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * This method is used for calling control properties of aggregated device
+	 *
+	 * @param property name of controllable property
+	 * @param value value of controllable property
+	 * @param client device need control
+	 */
+	private void aggregatedDeviceControl(String property, String value, AggregatedDevice client) {
+		String[] splitProperty = property.split(TriplePlayConstrant.HASH);
+		AggregatorGroupControllingMetric aggregatorGroupControllingMetric = AggregatorGroupControllingMetric.getByName(splitProperty[0]);
+		switch (aggregatorGroupControllingMetric) {
+			case CHANNEL:
+				channelControl(splitProperty[1], value, client);
+		}
+	}
+
+	/**
+	 * This method is used for calling change channel
+	 *
+	 * @param value value of controllable property
+	 * @param client device need control
+	 */
+	private void selectChannelControl(String value, AggregatedDevice client) {
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			ControllingRequest controllingRequest = new ControllingRequest(client.getDeviceId(), value);
+			ResponseEntity<?> response = doRequest(TriplePlayURL.BASE_URI, HttpMethod.PUT, headers, controllingRequest.buildRequestBody(), String.class);
+			Optional<?> responseBody = Optional.ofNullable(response)
+					.map(HttpEntity::getBody);
+			if (response.getStatusCode().is2xxSuccessful() && responseBody.isPresent()) {
+				client.getProperties().put(ChannelInfoMetric.SELECT_CHANNEL.getName(), cachedServices.get(value).getName());
+
+				//Create request to check channel was change
+				QueryClientRequestBodyV2 requestBodyV2 = new QueryClientRequestBodyV2();
+				requestBodyV2.setJsonrpc(2);
+				requestBodyV2.getClientMAC().add(client.getProperties().get(NetworkMetric.MAC_ADDRESS.getName()));
+				requestBodyV2.getInformation().add(TriplePlayConstrant.ACTIVITY_INFORMATION);
+				String responseOfQueryRequest = doPost(TriplePlayURL.BASE_URI, requestBodyV2.buildRequestBody());
+				MonitoringData monitoringData = objectMapper.readValue(responseOfQueryRequest, MonitoringData.class);
+				Client responseClient = monitoringData.getClientWrapper().getClients().get(0);
+
+				if (client.getProperties().get(ChannelInfoMetric.SELECT_CHANNEL.getName()) != responseClient.getActivity().getCurrentService().getName()) {
+					throw new IllegalStateException(String.format("Can not control channel of device %s, unknow error", client.getDeviceId()));
+				}
+				cachedAggregatedDevices.put(client.getDeviceId(), client);
+			} else {
+				throw new IllegalStateException(String.format("Can not change channel of device %s", client.getDeviceId()));
+			}
+		} catch (Exception e) {
+			throw new ResourceNotReachableException(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * This method is used for calling control channel properties
+	 *
+	 * @param property name of controllable property
+	 * @param value value of controllable property
+	 * @param client device need control
+	 */
+	private void channelControl(String property, String value, AggregatedDevice client) {
+		ChannelInfoMetric channelInfoMetric = ChannelInfoMetric.getByName(property);
+		switch (channelInfoMetric) {
+			case SELECT_CHANNEL:
+				selectChannelControl(value, client);
+		}
+	}
+
+	/**
+	 * Because amino device doesn't have serivces(Maybe amino die is an issue), so I use cachedServices instead.
+	 */
+	private void convertServicetoAllService(Client client) {
+		client.setServices(cachedServices.values().stream().collect(Collectors.toCollection(ArrayList::new)));
 	}
 }

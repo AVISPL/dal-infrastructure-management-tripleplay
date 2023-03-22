@@ -20,9 +20,11 @@
 		public static final String ACTIVITY_INFORMATION = "activity";
 		public static final String SERVICES_INFORMATION = "services";
 		// Thread metric
-		public static final int MAX_THREAD_QUANTITY = 2;
+		public static final int MAX_THREAD_QUANTITY = 2;//8
 		public static final int MIN_THREAD_QUANTITY = 1;
 		public static final int MAX_CLIENT_QUANTITY_PER_THREAD = 10;//196
 		public static final int MIN_POLLING_INTERVAL = 1;
-		public static final int MAX_CLIENT_QUANTITY_PER_REQUEST = 5;
+		public static final int MAX_CLIENT_QUANTITY_PER_REQUEST = 5;//28
+
+		public static final String HASH = "#";
 	}

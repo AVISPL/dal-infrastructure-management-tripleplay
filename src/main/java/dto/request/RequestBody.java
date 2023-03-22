@@ -1,4 +1,4 @@
-package common.dto.request;
+package dto.request;
 
 /**
  * Request
