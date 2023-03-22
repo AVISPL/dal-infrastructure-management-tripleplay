@@ -121,12 +121,4 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 				+ "},\"ipAddress\",-1]}", this.jsonrpc, this.METHOD, params, informationString));
 		return request.toString();
 	}
-
-	public String getClientIpListToString() {
-		String temp = "";
-		for (String ip : this.clientMAC) {
-			temp = temp + ip + " ";
-		}
-		return temp;
-	}
 }

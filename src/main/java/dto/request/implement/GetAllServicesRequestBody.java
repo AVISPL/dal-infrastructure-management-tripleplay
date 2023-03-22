@@ -15,11 +15,8 @@ import dto.request.RequestBody;
  */
 public class GetAllServicesRequestBody implements RequestBody {
 	private int jsonrpc;
-	private final String METHOD="GetAllServices";
+	private final String METHOD = "GetAllServices";
 	private int param;
-
-	public GetAllServicesRequestBody() {
-	}
 
 	/**
 	 * Retrieves {@link #jsonrpc}
@@ -68,6 +65,6 @@ public class GetAllServicesRequestBody implements RequestBody {
 
 	@Override
 	public String buildRequestBody() {
-		return String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\"params\":[%d]}",this.jsonrpc,this.METHOD,this.param);
+		return String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\"params\":[%d]}", this.jsonrpc, this.METHOD, this.param);
 	}
 }

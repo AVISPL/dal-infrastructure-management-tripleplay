@@ -133,22 +133,8 @@ public class QueryClientsListRequestBody implements RequestBody {
 		if (!StringUtils.isNullOrEmpty(informationString.toString()))
 			informationString.deleteCharAt(informationString.length()-1);
 		StringBuilder request= new StringBuilder(String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\""
-				+ "params\":[[{\"field\":\"%s\",\"operator\":\"%s\",\"value\":\"%s\"}\n"
-//				+ "      ,{\n"
-//				+ "        \"logical\": \"OR\",\n"
-//				+ "        \"field\": \"clientType\",\n"
-//				+ "        \"operator\": \"is\",\n"
-//				+ "        \"value\": \"MVP\"\n"
-//				+ "      },\n"
-//				+ "      {\n"
-//				+ "        \"logical\": \"OR\",\n"
-//				+ "        \"field\": \"clientType\",\n"
-//				+ "        \"operator\": \"is\",\n"
-//				+ "        \"value\": \"PC\"\n"
-//				+ "      }"
-				+ "],{%s"
+				+ "params\":[[{\"field\":\"%s\",\"operator\":\"%s\",\"value\":\"%s\"}\n],{%s"
 				+ "},\"ipAddress\",-1]}",this.jsonrpc,this.METHOD,this.field,this.operation,this.value,informationString));
-		//System.out.println(request.toString());
 		return request.toString();
 	}
 }

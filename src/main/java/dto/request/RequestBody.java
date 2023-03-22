@@ -5,12 +5,17 @@
 package dto.request;
 
 /**
- * Request
+ * Request body
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/15/2023
  * @since 1.0.0
  */
 public interface RequestBody {
+	/**
+	 * Build request body
+	 *
+	 * @return Request body
+	 */
 	String buildRequestBody();
 }

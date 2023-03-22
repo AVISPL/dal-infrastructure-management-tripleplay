@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
-
 package dto.request.implement;
 
 import dto.request.RequestBody;
@@ -17,6 +16,11 @@ public class ControllingRequest implements RequestBody {
 	private String clientId;
 	private String serviceId;
 
+	/**
+	 * Create a Controlling request with full param
+	 * @param clientId id of client
+	 * @param serviceId id of service
+	 */
 	public ControllingRequest(String clientId, String serviceId) {
 		this.clientId = clientId;
 		this.serviceId = serviceId;
