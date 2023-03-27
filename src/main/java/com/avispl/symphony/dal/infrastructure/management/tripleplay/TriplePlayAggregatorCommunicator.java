@@ -286,11 +286,15 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		for (Service service : client.getServices()) {
 			serviceNames.add(service.getName());
 		}
-		addAdvanceControlProperties(advancedControllableProperties, properties,
-				ControllablePropertyFactory.createDropdown(buildNameForChannel(ChannelInfoMetric.SELECT_CHANNEL.getName()), serviceNames,
-						Optional.ofNullable(client.getActivity()).map(Activity::getCurrentService).map(Service::getName).orElse(TriplePlayConstrant.NONE)));
-		properties.put(buildNameForChannel(ChannelInfoMetric.LAST_CHANNEL.getName()),
-				Optional.ofNullable(client.getActivity()).map(Activity::getLastService).map(Service::getName).orElse(TriplePlayConstrant.NONE));
+		if (client.getActivity().getCurrentService() != null) {
+			addAdvanceControlProperties(advancedControllableProperties, properties,
+					ControllablePropertyFactory.createDropdown(buildNameForChannel(ChannelInfoMetric.SELECT_CHANNEL.getName()), serviceNames,
+							Optional.ofNullable(client.getActivity()).map(Activity::getCurrentService).map(Service::getName).orElse(TriplePlayConstrant.NONE)));
+		}
+		if (client.getActivity().getLastService() != null) {
+			properties.put(buildNameForChannel(ChannelInfoMetric.LAST_CHANNEL.getName()),
+					Optional.ofNullable(client.getActivity()).map(Activity::getLastService).map(Service::getName).orElse(TriplePlayConstrant.NONE));
+		}
 	}
 
 	/**
