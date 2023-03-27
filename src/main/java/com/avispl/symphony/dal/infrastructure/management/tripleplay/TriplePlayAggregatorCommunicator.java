@@ -74,7 +74,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	/**
 	 * Process is running constantly and triggers collecting data from TriplePlay API endpoints base on getMultipleStatistic
 	 *
-	 * @author Kevin
+	 * @author Harry
 	 * @since 1.0.0
 	 */
 	class ClientLoader implements Runnable {
