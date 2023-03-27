@@ -4,11 +4,10 @@
 
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Network
+ * Network store some network information of client like ip adress, mac adress, hamepage, dhcp subnet,...
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/13/2023
@@ -16,13 +15,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Network {
-	@JsonAlias("ip")
 	private String ip;
-	@JsonAlias("mac")
 	private String mac;
-	@JsonAlias("homepage")
 	private String homepage;
-	@JsonAlias("dhcpSubnet")
 	private String dhcpSubnet;
 
 	/**

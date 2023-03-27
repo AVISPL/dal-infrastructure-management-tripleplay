@@ -12,13 +12,13 @@ import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.
 import com.avispl.symphony.dal.util.StringUtils;
 
 /**
- * QueryClientRequestV2
+ * Request to get information of client
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/17/2023
  * @since 1.0.0
  */
-public class QueryClientRequestBodyV2 implements RequestBody {
+public class QueryClientRequestBody implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD = "QueryClients";
 	private List<String> clientMAC = new ArrayList<>();

@@ -5,7 +5,7 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request;
 
 /**
- * Request body
+ * Request body use to build body for request
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/15/2023

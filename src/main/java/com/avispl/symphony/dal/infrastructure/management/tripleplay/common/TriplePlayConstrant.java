@@ -17,6 +17,9 @@
 		public static final String SET_TOP_BOX = "STB";
 		public static final int JSON_RPC = 2;
 		public static final String EMPTY = "";
+		public static final String HASH = "#";
+		public static final String CLIENT_TYPE="clientType";
+		public static final String IS="is";
 
 		//Information
 		public static final String HARDWARE_INFORMATION = "hardware";
@@ -24,11 +27,9 @@
 		public static final String ACTIVITY_INFORMATION = "activity";
 		public static final String SERVICES_INFORMATION = "services";
 		// Thread metric
-		public static final int MAX_THREAD_QUANTITY = 8;//8
+		public static final int MAX_THREAD_QUANTITY = 8;
 		public static final int MIN_THREAD_QUANTITY = 1;
-		public static final int MAX_CLIENT_QUANTITY_PER_THREAD = 196;//196
+		public static final int MAX_CLIENT_QUANTITY_PER_THREAD = 196;
 		public static final int MIN_POLLING_INTERVAL = 1;
-		public static final int MAX_CLIENT_QUANTITY_PER_REQUEST = 28;//28
-
-		public static final String HASH = "#";
+		public static final int MAX_CLIENT_QUANTITY_PER_REQUEST = 28;
 	}

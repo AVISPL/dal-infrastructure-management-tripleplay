@@ -5,7 +5,7 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring;
 
 /**
- * NetworkMetric
+ * NetworkMetric defined the enum for monitoring network
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/22/2023

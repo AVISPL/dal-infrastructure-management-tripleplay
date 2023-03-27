@@ -4,11 +4,10 @@
 
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Hardware
+ * Hardware store some hardware information of client like type, software version, serial number, hardware version, model...
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/13/2023
@@ -16,15 +15,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Hardware {
-	@JsonAlias("type")
 	private String type;
-	@JsonAlias("softwareVersion")
 	private String softwareVersion;
-	@JsonAlias("serialNumber")
 	private String serialNumber;
-	@JsonAlias("hardwareVersion")
 	private String hardwareVersion;
-	@JsonAlias("model")
 	private String model;
 
 	/**

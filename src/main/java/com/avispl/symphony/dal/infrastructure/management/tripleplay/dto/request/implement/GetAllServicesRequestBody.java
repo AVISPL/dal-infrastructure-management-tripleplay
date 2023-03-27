@@ -7,7 +7,7 @@ package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.RequestBody;
 
 /**
- * GetAllServicesRequest
+ * Request body to get all services
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/15/2023

@@ -5,11 +5,10 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Service
+ * Service store some information of service like id, channel number, name, type,...
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/14/2023
@@ -17,17 +16,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Service {
-	@JsonAlias("id")
 	private long id;
-	@JsonAlias("channelNumber")
 	private long channelNumber;
-	@JsonAlias("name")
 	private String name;
-	@JsonAlias("type")
 	private long type;
-	@JsonAlias("startedViewing")
 	private String startedViewing;
-	@JsonAlias("endedViewing")
 	private String endedViewing;
 
 	/**

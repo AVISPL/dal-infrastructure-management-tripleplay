@@ -7,11 +7,10 @@ package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Client
+ * Client store some information of client like clientId, lacale, location, description...
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/14/2023
@@ -19,29 +18,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Client implements Comparable<Client> {
-	@JsonAlias("clientId")
 	private String clientId;
-	@JsonAlias("locale")
 	private String locale;
-	@JsonAlias("location")
 	private String location;
-	@JsonAlias("auxiliaryID")
 	private String auxiliaryID;
-	@JsonAlias("description")
 	private String description;
-	@JsonAlias("type")
 	private String type;
-	@JsonAlias("typeDescription")
 	private String typeDescription;
-	@JsonAlias("connectionStatus")
 	private String connectionStatus;
-	@JsonAlias("hardware")
 	private Hardware hardware;
-	@JsonAlias("network")
 	private Network network;
-	@JsonAlias("activity")
 	private Activity activity;
-	@JsonAlias("services")
 	private List<Service> services = new ArrayList<>();
 
 	/**

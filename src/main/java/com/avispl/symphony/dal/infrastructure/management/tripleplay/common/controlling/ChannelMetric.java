@@ -5,23 +5,21 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.controlling;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
- * ChannelInfoMetric
+ * defined the ChannelInfo in controlling device for monitoring and controlling process
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/22/2023
  * @since 1.0.0
  */
-public enum ChannelInfoMetric {
+public enum ChannelMetric {
 	SELECT_CHANNEL("SelectChannel"),
-	LAST_CHANNEL("LastChannel"),
-	OTHER("Other");
+	LAST_CHANNEL("LastChannel");
 
 	private final String name;
 
-	ChannelInfoMetric(String name) {
+	ChannelMetric(String name) {
 		this.name = name;
 	}
 
@@ -34,11 +32,8 @@ public enum ChannelInfoMetric {
 		return name;
 	}
 
-	public static ChannelInfoMetric getByName(String name) {
-		Optional<ChannelInfoMetric> channelInfoMetric = Arrays.stream(ChannelInfoMetric.values()).filter(c -> name.equals(c.getName())).findFirst();
-		if (channelInfoMetric.isPresent()) {
-			return channelInfoMetric.get();
-		}
-		return ChannelInfoMetric.OTHER;
+	public static ChannelMetric getByName(String name) {
+		return Arrays.stream(ChannelMetric.values()).filter(c -> name.equals(c.getName())).
+				findFirst().orElseThrow(()->new IllegalStateException(String.format("The %s control not exist", name)));
 	}
 }
