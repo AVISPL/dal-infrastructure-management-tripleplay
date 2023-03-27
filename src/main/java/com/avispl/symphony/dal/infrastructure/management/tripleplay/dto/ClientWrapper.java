@@ -7,7 +7,6 @@ package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -19,7 +18,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ClientWrapper {
-	@JsonAlias("clients")
 	private List<Client> clients = new ArrayList<>();
 
 	/**

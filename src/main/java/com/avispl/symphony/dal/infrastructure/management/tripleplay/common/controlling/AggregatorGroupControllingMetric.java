@@ -5,10 +5,9 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.controlling;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
- * AggregatorGroupControllingMetric
+ * AggregatorGroupControllingMetric defined the constant for display type of controllable properties ( switch, slider, button,...)
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/22/2023
@@ -16,8 +15,7 @@ import java.util.Optional;
  */
 public enum AggregatorGroupControllingMetric {
 	CHANNEL("ChannelControl"),
-	AUDIO_CONTROL("AudioControl"),
-	AGGREGATED_DEVICE("AggregatedDevice");
+	AUDIO_CONTROL("AudioControl");
 
 
 	private final String name;
@@ -42,10 +40,7 @@ public enum AggregatorGroupControllingMetric {
 	 * @return AggregatorManagementGroupMetric is the management metric group that want to get
 	 */
 	public static AggregatorGroupControllingMetric getByName(String name) {
-		Optional<AggregatorGroupControllingMetric> managementGroupMetric = Arrays.stream(AggregatorGroupControllingMetric.values()).filter(c -> name.equals(c.getName())).findFirst();
-		if (managementGroupMetric.isPresent()) {
-			return managementGroupMetric.get();
-		}
-		return AggregatorGroupControllingMetric.AGGREGATED_DEVICE;
+		return Arrays.stream(AggregatorGroupControllingMetric.values()).filter(c -> name.equals(c.getName())).
+				findFirst().orElseThrow(()->new IllegalStateException(String.format("The %s control not exist", name)));
 	}
 }

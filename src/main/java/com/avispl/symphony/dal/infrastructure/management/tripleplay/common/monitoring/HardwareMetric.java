@@ -5,7 +5,7 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring;
 
 /**
- * HardwareMetric
+ * HardwareMetric defined the enum for monitoring hardware
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/22/2023

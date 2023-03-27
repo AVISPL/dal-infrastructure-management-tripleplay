@@ -5,7 +5,7 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common;
 
 /**
- * TriplePlayURL
+ * URLs which will be accessed
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/14/2023

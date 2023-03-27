@@ -5,7 +5,7 @@
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring;
 
 /**
- * ClientMetric
+ * ClientInfoMetric defined the enum for monitoring client
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/20/2023

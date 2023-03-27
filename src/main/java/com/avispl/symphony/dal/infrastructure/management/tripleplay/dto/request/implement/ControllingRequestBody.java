@@ -6,13 +6,13 @@ package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.RequestBody;
 
 /**
- * ControllingRequest
+ * Request body to control client channel
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/22/2023
  * @since 1.0.0
  */
-public class ControllingRequest implements RequestBody {
+public class ControllingRequestBody implements RequestBody {
 	private String clientId;
 	private String serviceId;
 
@@ -22,7 +22,7 @@ public class ControllingRequest implements RequestBody {
 	 * @param clientId id of client
 	 * @param serviceId id of service
 	 */
-	public ControllingRequest(String clientId, String serviceId) {
+	public ControllingRequestBody(String clientId, String serviceId) {
 		this.clientId = clientId;
 		this.serviceId = serviceId;
 	}

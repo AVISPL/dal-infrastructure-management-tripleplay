@@ -4,8 +4,6 @@
 
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -20,9 +18,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class MonitoringData {
 	@JsonAlias("result")
 	private ClientWrapper clientWrapper;
-	@JsonAlias("result")
-	private List<Service> services;
-	@JsonAlias("jsonrpc")
 	private String jsonrpc;
 
 	/**
@@ -59,24 +54,6 @@ public class MonitoringData {
 	 */
 	public void setJsonrpc(String jsonrpc) {
 		this.jsonrpc = jsonrpc;
-	}
-
-	/**
-	 * Retrieves {@link #services}
-	 *
-	 * @return value of {@link #services}
-	 */
-	public List<Service> getServices() {
-		return services;
-	}
-
-	/**
-	 * Sets {@link #services} value
-	 *
-	 * @param services new value of {@link #services}
-	 */
-	public void setServices(List<Service> services) {
-		this.services = services;
 	}
 
 	@Override

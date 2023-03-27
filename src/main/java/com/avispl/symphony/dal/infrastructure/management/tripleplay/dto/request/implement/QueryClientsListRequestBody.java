@@ -12,7 +12,7 @@ import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.
 import com.avispl.symphony.dal.util.StringUtils;
 
 /**
- * QueryClientsListRequest
+ * Request to get client list
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 3/16/2023

@@ -4,7 +4,6 @@
 
 package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -16,21 +15,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Activity {
-	@JsonAlias("application")
 	private String application;
-	@JsonAlias("lastSeen")
 	private String lastSeen;
-	@JsonAlias("themeID")
 	private String themeID;
-	@JsonAlias("page")
 	private String page;
-	@JsonAlias("pageName")
 	private String pageName;
-	@JsonAlias("pageLoaded")
 	private String pageLoaded;
-	@JsonAlias("currentService")
 	private Service currentService;
-	@JsonAlias("lastService")
 	private Service lastService;
 
 	/**
