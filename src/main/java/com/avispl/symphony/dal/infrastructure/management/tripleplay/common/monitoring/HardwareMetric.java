@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package common.monitoring;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring;
 
 /**
  * HardwareMetric
@@ -22,7 +22,7 @@ public enum HardwareMetric {
 
 
 	HardwareMetric(String name) {
-		this.name=name;
+		this.name = name;
 	}
 
 	/**

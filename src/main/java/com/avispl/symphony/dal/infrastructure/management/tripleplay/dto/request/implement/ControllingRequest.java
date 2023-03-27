@@ -1,9 +1,9 @@
 /*
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
-package dto.request.implement;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.implement;
 
-import dto.request.RequestBody;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.RequestBody;
 
 /**
  * ControllingRequest
@@ -18,6 +18,7 @@ public class ControllingRequest implements RequestBody {
 
 	/**
 	 * Create a Controlling request with full param
+	 *
 	 * @param clientId id of client
 	 * @param serviceId id of service
 	 */
@@ -28,6 +29,6 @@ public class ControllingRequest implements RequestBody {
 
 	@Override
 	public String buildRequestBody() {
-		return String.format("{\"jsonrpc\":\"2.0\",\"method\":\"ChangeChannel\",\"params\":[%s,%s]}",this.clientId,this.serviceId);
+		return String.format("{\"jsonrpc\":\"2.0\",\"method\":\"ChangeChannel\",\"params\":[%s,%s]}", this.clientId, this.serviceId);
 	}
 }

@@ -55,5 +55,5 @@ jobs:
         run: echo "file=$(ls target/symphony-dal-infrastructure-management-tripleplay-${{ needs.versiongenerate.outputs.version }}.jar)" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@v3
         with:
-          name: TriplePlayAggregatorCommunicator
+          name: com.avispl.symphony.dal.infrastructure.management.tripleplay.TriplePlayAggregatorCommunicator
           path: ${{ steps.getfilename.outputs.file }}

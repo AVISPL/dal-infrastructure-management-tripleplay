@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package common.monitoring;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring;
 
 /**
  * NetworkMetric
@@ -17,8 +17,9 @@ public enum NetworkMetric {
 	DHCP_SUBNET("DHCPSubnet");
 
 	private final String name;
+
 	NetworkMetric(String name) {
-		this.name=name;
+		this.name = name;
 	}
 
 	/**

@@ -2,45 +2,29 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package dto.request.implement;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.implement;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import dto.request.RequestBody;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.RequestBody;
 
 import com.avispl.symphony.dal.util.StringUtils;
 
 /**
- * QueryClientRequestV2
+ * QueryClientsListRequest
  *
  * @author Harry / Symphony Dev Team<br>
- * Created on 3/17/2023
+ * Created on 3/16/2023
  * @since 1.0.0
  */
-public class QueryClientRequestBodyV2 implements RequestBody {
+public class QueryClientsListRequestBody implements RequestBody {
 	private int jsonrpc;
 	private final String METHOD = "QueryClients";
-	private List<String> clientMAC = new ArrayList<>();
+	private String field;
+	private String operation;
+	private String value;
 	private List<String> information = new ArrayList<>();
-
-	/**
-	 * Retrieves {@link #clientMAC}
-	 *
-	 * @return value of {@link #clientMAC}
-	 */
-	public List<String> getClientMAC() {
-		return clientMAC;
-	}
-
-	/**
-	 * Sets {@link #clientMAC} value
-	 *
-	 * @param clientMAC new value of {@link #clientMAC}
-	 */
-	public void setClientMAC(List<String> clientMAC) {
-		this.clientMAC = clientMAC;
-	}
 
 	/**
 	 * Retrieves {@link #jsonrpc}
@@ -70,6 +54,60 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 	}
 
 	/**
+	 * Retrieves {@link #field}
+	 *
+	 * @return value of {@link #field}
+	 */
+	public String getField() {
+		return field;
+	}
+
+	/**
+	 * Sets {@link #field} value
+	 *
+	 * @param field new value of {@link #field}
+	 */
+	public void setField(String field) {
+		this.field = field;
+	}
+
+	/**
+	 * Retrieves {@link #operation}
+	 *
+	 * @return value of {@link #operation}
+	 */
+	public String getOperation() {
+		return operation;
+	}
+
+	/**
+	 * Sets {@link #operation} value
+	 *
+	 * @param operation new value of {@link #operation}
+	 */
+	public void setOperation(String operation) {
+		this.operation = operation;
+	}
+
+	/**
+	 * Retrieves {@link #value}
+	 *
+	 * @return value of {@link #value}
+	 */
+	public String getValue() {
+		return value;
+	}
+
+	/**
+	 * Sets {@link #value} value
+	 *
+	 * @param value new value of {@link #value}
+	 */
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	/**
 	 * Retrieves {@link #information}
 	 *
 	 * @return value of {@link #information}
@@ -89,25 +127,6 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 
 	@Override
 	public String buildRequestBody() {
-
-		//Generate params string
-		StringBuilder params = new StringBuilder();
-		for (int i = 0; i < this.clientMAC.size(); ++i) {
-			params.append("{");
-			if (i != 0) {
-				params.append("\"logical\":\"OR\",");
-			}
-			params.append(String.format("\n"
-					+ "        \"field\": \"macAddress\",\n"
-					+ "        \"operator\": \"is\",\n"
-					+ "        \"value\": \"%s\"\n"
-					+ "      }", this.clientMAC.get(i)));
-			if (i != clientMAC.size() - 1) {
-				params.append(",");
-			}
-		}
-
-		//Generate information string
 		StringBuilder informationString = new StringBuilder();
 		for (String info : this.information) {
 			informationString.append("\"" + info + "\":true,");
@@ -115,10 +134,9 @@ public class QueryClientRequestBodyV2 implements RequestBody {
 		if (!StringUtils.isNullOrEmpty(informationString.toString())) {
 			informationString.deleteCharAt(informationString.length() - 1);
 		}
-
 		StringBuilder request = new StringBuilder(String.format("{\"jsonrpc\":%d,\"method\":\"%s\",\""
-				+ "params\":[[%s],{%s"
-				+ "},\"ipAddress\",-1]}", this.jsonrpc, this.METHOD, params, informationString));
+				+ "params\":[[{\"field\":\"%s\",\"operator\":\"%s\",\"value\":\"%s\"}\n],{%s"
+				+ "},\"ipAddress\",-1]}", this.jsonrpc, this.METHOD, this.field, this.operation, this.value, informationString));
 		return request.toString();
 	}
 }

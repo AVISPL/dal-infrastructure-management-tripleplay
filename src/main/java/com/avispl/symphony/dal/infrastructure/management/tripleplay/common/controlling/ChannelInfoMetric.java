@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package common.controlling;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.controlling;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -20,8 +20,9 @@ public enum ChannelInfoMetric {
 	OTHER("Other");
 
 	private final String name;
+
 	ChannelInfoMetric(String name) {
-		this.name=name;
+		this.name = name;
 	}
 
 	/**

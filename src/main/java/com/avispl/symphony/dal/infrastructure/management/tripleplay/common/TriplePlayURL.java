@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package common;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.common;
 
 /**
  * TriplePlayURL
@@ -12,5 +12,5 @@ package common;
  * @since 1.0.0
  */
 public class TriplePlayURL {
-	public static final String BASE_URI= "/triplecare/JsonRpcHandler.php";
+	public static final String BASE_URI = "/triplecare/JsonRpcHandler.php";
 }

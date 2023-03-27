@@ -2,9 +2,9 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package dto.request.implement;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.implement;
 
-import dto.request.RequestBody;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.request.RequestBody;
 
 /**
  * GetAllServicesRequest

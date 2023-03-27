@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package common.controlling;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.common.controlling;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -16,7 +16,9 @@ import java.util.Optional;
  */
 public enum AggregatorGroupControllingMetric {
 	CHANNEL("ChannelControl"),
+	AUDIO_CONTROL("AudioControl"),
 	AGGREGATED_DEVICE("AggregatedDevice");
+
 
 	private final String name;
 

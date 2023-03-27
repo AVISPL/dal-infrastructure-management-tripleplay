@@ -2,7 +2,7 @@
  * Copyright (c) 2023 AVI-SPL, Inc. All Rights Reserved.
  */
 
-package dto;
+package com.avispl.symphony.dal.infrastructure.management.tripleplay.dto;
 
 import java.util.List;
 

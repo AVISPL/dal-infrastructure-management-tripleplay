@@ -3,30 +3,17 @@
  */
 
 import java.util.List;
-import java.util.Map;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import common.TriplePlayConstrant;
-import common.TriplePlayURL;
-import common.monitoring.ClientInfoMetric;
-import common.monitoring.NetworkMetric;
-import dto.Client;
-import dto.MonitoringData;
-import dto.request.implement.ControllingRequest;
-import dto.request.implement.QueryClientRequestBodyV2;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.avispl.symphony.api.dal.dto.monitor.aggregator.AggregatedDevice;
-import com.avispl.symphony.api.dal.error.ResourceNotReachableException;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.TriplePlayAggregatorCommunicator;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring.ClientInfoMetric;
 
 /**
  * TriplePlayTest
@@ -68,7 +55,6 @@ public class TriplePlayAggregatorCommunicatorTest {
 			triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
 			Thread.sleep(delayTime);
 			List<AggregatedDevice> aggregatedDevices = triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
-
 			for (AggregatedDevice aggregatedDevice : aggregatedDevices) {
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_ID.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_TYPE.getName()));
