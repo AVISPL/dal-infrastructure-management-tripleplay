@@ -272,8 +272,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
-		if (logger.isWarnEnabled()) {
-			logger.warn("Start call retrieveMultipleStatistic");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Start call retrieveMultipleStatistic");
 		}
 		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
 
@@ -387,7 +387,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 
 		String lastClientKey = lastClientMac != null ? cachedClients.floorKey(lastClientMac) : null;
-		if (cachedClients.size() == 0) {
+		if (cachedClients.isEmpty()) {
 			lastClientMac = null;
 			return;
 		}
@@ -397,7 +397,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		String itClient = null;
 		if (lastClientKey != null) {
 			while (cacheClientIt.hasNext()) {
-				if (cacheClientIt.next().getKey() == lastClientKey) {
+				if (cacheClientIt.next().getKey().equals(lastClientKey)) {
 					break;
 				}
 			}
@@ -669,16 +669,16 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private void updateServiceInCachedClients(AggregatedDevice client, Client cachedClient, String value) {
 		for (AdvancedControllableProperty advancedControllableProperty : client.getControllableProperties()) {
-			if (advancedControllableProperty.getName() == buildNameForChannel(ChannelMetric.SELECT_CHANNEL.getName())) {
+			if (advancedControllableProperty.getName().equals(buildNameForChannel(ChannelMetric.SELECT_CHANNEL.getName()))) {
 				client.getProperties().put(buildNameForChannel(ChannelMetric.LAST_CHANNEL.getName()), advancedControllableProperty.getValue().toString());
 				break;
 			}
 		}
 		for (Service service : cachedClient.getServices()) {
-			if (service.getName() == client.getProperties().get(buildNameForChannel(ChannelMetric.LAST_CHANNEL.getName()))) {
+			if (service.getName().equals(client.getProperties().get(buildNameForChannel(ChannelMetric.LAST_CHANNEL.getName())))) {
 				cachedClient.getActivity().setLastService(service);
 			}
-			if (service.getName() == value) {
+			if (service.getName().equals(value)) {
 				cachedClient.getActivity().setCurrentService(service);
 			}
 		}
