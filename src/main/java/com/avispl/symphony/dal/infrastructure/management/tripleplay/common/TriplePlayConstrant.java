@@ -32,4 +32,5 @@
 		public static final int MAX_CLIENT_QUANTITY_PER_THREAD = 196;
 		public static final int MIN_POLLING_INTERVAL = 1;
 		public static final int MAX_CLIENT_QUANTITY_PER_REQUEST = 28;
+		public static final String COMMA = ",";
 	}

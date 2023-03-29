@@ -6,6 +6,7 @@ package com.avispl.symphony.dal.infrastructure.management.tripleplay;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -168,6 +170,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private volatile String pollingInterval;
 
+	private String deviceNameFilter = "";
+
 	/**
 	 * the last customer's mac address was updated in getMultipleStatistics before
 	 */
@@ -214,6 +218,24 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		this.pollingInterval = pollingInterval;
 	}
 
+	/**
+	 * Retrieves {@link #deviceNameFilter}
+	 *
+	 * @return value of {@link #deviceNameFilter}
+	 */
+	public String getDeviceNameFilter() {
+		return deviceNameFilter;
+	}
+
+	/**
+	 * Sets {@link #deviceNameFilter} value
+	 *
+	 * @param deviceNameFilter new value of {@link #deviceNameFilter}
+	 */
+	public void setDeviceNameFilter(String deviceNameFilter) {
+		this.deviceNameFilter = deviceNameFilter;
+	}
+
 	@Override
 	public List<Statistics> getMultipleStatistics() throws Exception {
 		//Because there are some threads that keep running when the next getMultiple is called,
@@ -229,6 +251,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			if (!isEmergencyDelivery) {
 				int currentSizeCacheClients = cachedClients.size();
 				retrieveClients();
+				filterByName();
 				retrieveServices();
 				localPollingInterval = calculatingLocalPollingInterval();
 				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
@@ -284,6 +307,15 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		return retrieveMultipleStatistics();
 	}
 
+	@Override
+	protected void internalDestroy() {
+		cachedClients.clear();
+		cachedAggregatedDevices.clear();
+		localPollingInterval = TriplePlayConstrant.MIN_POLLING_INTERVAL;
+		clientExecutionPool.clear();
+		cachedServices.clear();
+	}
+
 	/**
 	 * Retrieve number of clients and ips of them
 	 */
@@ -319,6 +351,22 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(String.format("Error while retrieving the clients: %s", e.getMessage()), e);
 		}
+	}
+
+	private void filterByName() {
+		if (StringUtils.isNullOrEmpty(deviceNameFilter)) {
+			return;
+		}
+		Set<String> filterNames = convertUserInput(deviceNameFilter);
+		TreeMap<String, Client> localCachedClient = new TreeMap<>();
+		for (Entry<String, Client> clientEntry : cachedClients.entrySet()) {
+			if (!filterNames.contains(clientEntry.getValue().getTypeDescription())) {
+				cachedAggregatedDevices.remove(clientEntry.getValue().getClientId());
+			} else {
+				localCachedClient.put(clientEntry.getKey(), clientEntry.getValue());
+			}
+		}
+		cachedClients = localCachedClient;
 	}
 
 	/**
@@ -430,6 +478,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		switch (aggregatorGroupControllingMetric) {
 			case CHANNEL:
 				channelControl(splitProperty[1], value, client);
+				isEmergencyDelivery = true;
 				break;
 			default:
 				logger.debug(String.format("%s are not supported", splitProperty[0]));
@@ -478,11 +527,11 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 					.map(HttpEntity::getBody);
 			if (response.getStatusCode().is2xxSuccessful() && responseBody.isPresent()) {
 				//Check channel was change
-				List<String> macAddress=new ArrayList<>();
-				List<String> information=new ArrayList<>();
+				List<String> macAddress = new ArrayList<>();
+				List<String> information = new ArrayList<>();
 				macAddress.add(client.getProperties().get(NetworkMetric.MAC_ADDRESS.getName()));
 				information.add(TriplePlayConstrant.ACTIVITY_INFORMATION);
-				String responseOfQueryRequest = getResponseOfQueryClientRequest(macAddress,information);
+				String responseOfQueryRequest = getResponseOfQueryClientRequest(macAddress, information);
 				MonitoringData monitoringData = objectMapper.readValue(responseOfQueryRequest, MonitoringData.class);
 				Client responseClient = monitoringData.getClientWrapper().getClients().get(0);
 
@@ -686,6 +735,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	/**
 	 * get all service of client
+	 *
 	 * @param client client to get services
 	 * @return list all service of client
 	 */
@@ -699,16 +749,40 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	/**
 	 * get response of query client request
+	 *
 	 * @param macAddress list all mac address of clients
 	 * @param information list all information need to get
 	 * @return response of request
-	 * @throws Exception
 	 */
-	private String getResponseOfQueryClientRequest(List<String> macAddress,List<String> information) throws Exception {
+	private String getResponseOfQueryClientRequest(List<String> macAddress, List<String> information) throws Exception {
 		QueryClientRequestBody requestBody = new QueryClientRequestBody();
 		requestBody.setJsonrpc(TriplePlayConstrant.JSON_RPC);
 		requestBody.setClientMAC(macAddress);
 		requestBody.setInformation(information);
 		return doPost(TriplePlayURL.BASE_URI, requestBody.buildRequestBody());
+	}
+
+	/**
+	 * This method is used to handle input from adapter properties and convert it to Set of String for control
+	 *
+	 * @return Set<String> is the Set of String of filter element
+	 */
+	private Set<String> convertUserInput(String input) {
+		try {
+			if (!StringUtils.isNullOrEmpty(input)) {
+				String[] listAdapterPropertyElement = input.split(TriplePlayConstrant.COMMA);
+
+				// Remove start and end spaces of each adapterProperty
+				Set<String> setAdapterPropertiesElement = new HashSet<>();
+				for (String adapterPropertyElement : listAdapterPropertyElement) {
+					setAdapterPropertiesElement.add(adapterPropertyElement.trim());
+				}
+				return setAdapterPropertiesElement;
+			}
+			return Collections.emptySet();
+		} catch (Exception e) {
+			logger.error("In valid adapter properties input");
+		}
+		return Collections.emptySet();
 	}
 }
