@@ -49,7 +49,7 @@ public class TriplePlayAggregatorCommunicatorTest {
 	@Test
 	public void testGetMultipleStatistics() throws Exception {
 		int delayTime = 3000;
-		int runNumber = 3;
+		int runNumber = 5;
 		for (int i = 0; i < runNumber; ++i) {
 			triplePlayAggregatorCommunicator.getMultipleStatistics();
 			triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
@@ -60,6 +60,7 @@ public class TriplePlayAggregatorCommunicatorTest {
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_TYPE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALTION.getName()));
+				System.out.println(aggregatedDevice.getProperties().get(ClientInfoMetric.ONLINE.getName()));
 			}
 		}
 	}
@@ -100,5 +101,4 @@ public class TriplePlayAggregatorCommunicatorTest {
 			}
 		}
 	}
-
 }

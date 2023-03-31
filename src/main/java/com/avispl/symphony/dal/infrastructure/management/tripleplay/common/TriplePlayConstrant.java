@@ -12,14 +12,15 @@
 	 * @since 1.0.0
 	 */
 	public class TriplePlayConstrant {
-		public static final String NONE = "NONE";
+		public static final String NONE = "None";
 		public static final String SPLIT_LOCALE = "_";
 		public static final String SET_TOP_BOX = "STB";
 		public static final int JSON_RPC = 2;
 		public static final String EMPTY = "";
 		public static final String HASH = "#";
-		public static final String CLIENT_TYPE="clientType";
-		public static final String IS="is";
+		public static final String CLIENT_TYPE = "clientType";
+		public static final String IS = "is";
+		public static final String ONLINE = "Connected";
 
 		//Information
 		public static final String HARDWARE_INFORMATION = "hardware";

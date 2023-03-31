@@ -131,7 +131,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 						AggregatedDevice aggregatedDevice = new AggregatedDevice();
 						aggregatedDevice.setDeviceId(getDefaultValueForNullOrEmpty(client.getClientId()));
 						aggregatedDevice.setProperties(properties);
-						aggregatedDevice.setDeviceName(client.getTypeDescription());
+						aggregatedDevice.setDeviceName(getDefaultValueForNullOrEmpty(client.getTypeDescription()));
+						aggregatedDevice.setDeviceOnline(client.getConnectionStatus().equals(TriplePlayConstrant.ONLINE));
+						aggregatedDevice.setType(getDefaultValueForNullOrEmpty(client.getType()));
 						if (!controllableProperties.isEmpty()) {
 							aggregatedDevice.setControllableProperties(controllableProperties);
 						}
@@ -590,7 +592,6 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private void populateDeviceMonitoring(Map<String, String> properties, Client client) {
 		properties.put(ClientInfoMetric.DEVICE_ID.getName(), getDefaultValueForNullOrEmpty(client.getClientId()));
-		properties.put(ClientInfoMetric.DEVICE_TYPE.getName(), getDefaultValueForNullOrEmpty(client.getType()));
 		properties.put(ClientInfoMetric.LOCALE.getName(), getDefaultValueForNullOrEmpty(client.getLocale()));
 		properties.put(ClientInfoMetric.LOCALTION.getName(), getDefaultValueForNullOrEmpty(client.getLocation()));
 		if (client.getHardware() != null) {
