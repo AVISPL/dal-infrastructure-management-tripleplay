@@ -172,7 +172,10 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private volatile String pollingInterval;
 
-	private String deviceNameFilter = "";
+	/**
+	 * filter devices by name
+	 */
+	private String deviceNameFilter;
 
 	/**
 	 * the last customer's mac address was updated in getMultipleStatistics before
@@ -197,9 +200,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	/**
 	 * cachedServices store all service
 	 */
-	private HashMap<String, Service> cachedServices = new HashMap<>();
+	private Map<String, Service> cachedServices = new HashMap<>();
 
-	private boolean isEmergencyDelivery = false;
+	private boolean isEmergencyDelivery;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
@@ -238,6 +241,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		this.deviceNameFilter = deviceNameFilter;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Statistics> getMultipleStatistics() throws Exception {
 		//Because there are some threads that keep running when the next getMultiple is called,
@@ -257,6 +263,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				retrieveServices();
 				localPollingInterval = calculatingLocalPollingInterval();
 				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
+
 				//Multi thread for get information of client
 				retrieveInformationOfAllClients(currentSizeCacheClients);
 			}
@@ -267,6 +274,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		return null;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
 		String property = controllableProperty.getProperty();
@@ -283,6 +293,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void controlProperties(List<ControllableProperty> list) throws Exception {
 		for (ControllableProperty controllableProperty : list) {
@@ -290,11 +303,16 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected void authenticate() throws Exception {
-
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
 		if (logger.isDebugEnabled()) {
@@ -304,11 +322,17 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
 		return retrieveMultipleStatistics();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected void internalDestroy() {
 		cachedClients.clear();
@@ -355,6 +379,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 	}
 
+	/**
+	 * filter all device by name
+	 */
 	private void filterByName() {
 		if (StringUtils.isNullOrEmpty(deviceNameFilter)) {
 			return;
@@ -782,7 +809,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			}
 			return Collections.emptySet();
 		} catch (Exception e) {
-			logger.error("In valid adapter properties input");
+			logger.error(String.format("Invalid adapter properties input: %s",e.getMessage()));
 		}
 		return Collections.emptySet();
 	}
