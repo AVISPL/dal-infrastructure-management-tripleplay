@@ -49,7 +49,7 @@ public class TriplePlayAggregatorCommunicatorTest {
 	@Test
 	public void testGetMultipleStatistics() throws Exception {
 		int delayTime = 3000;
-		int runNumber = 3;
+		int runNumber = 5;
 		for (int i = 0; i < runNumber; ++i) {
 			triplePlayAggregatorCommunicator.getMultipleStatistics();
 			triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
@@ -60,6 +60,7 @@ public class TriplePlayAggregatorCommunicatorTest {
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_TYPE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALTION.getName()));
+				System.out.println(aggregatedDevice.getProperties().get(ClientInfoMetric.ONLINE.getName()));
 			}
 		}
 	}
@@ -79,5 +80,25 @@ public class TriplePlayAggregatorCommunicatorTest {
 		controllableProperty.setProperty("ChannelControl#SelectChannel");
 		controllableProperty.setValue("3");
 		triplePlayAggregatorCommunicator.controlProperty(controllableProperty);
+	}
+
+	/**
+	 * Test retrieve multiple statistics with filter by name
+	 */
+	@Test
+	public void testFilterByName() throws Exception {
+		String filterName = "Amino H150 Client";
+		triplePlayAggregatorCommunicator.setDeviceNameFilter(filterName);
+		int delayTime = 3000;
+		int runNumber = 3;
+		for (int i = 0; i < runNumber; ++i) {
+			triplePlayAggregatorCommunicator.getMultipleStatistics();
+			triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
+			Thread.sleep(delayTime);
+			List<AggregatedDevice> aggregatedDevices = triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
+			for (AggregatedDevice aggregatedDevice : aggregatedDevices) {
+				Assertions.assertEquals(filterName, aggregatedDevice.getDeviceName());
+			}
+		}
 	}
 }

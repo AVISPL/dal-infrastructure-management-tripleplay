@@ -15,7 +15,8 @@ public enum ClientInfoMetric {
 	DEVICE_ID("deviceId"),
 	DEVICE_TYPE("deviceType"),
 	LOCALE("Locale"),
-	LOCALTION("Location");
+	LOCALTION("Location"),
+	ONLINE("DeviceOnline");
 
 	private final String name;
 
