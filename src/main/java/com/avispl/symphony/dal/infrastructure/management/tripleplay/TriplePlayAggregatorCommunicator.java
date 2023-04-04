@@ -809,7 +809,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			}
 			return Collections.emptySet();
 		} catch (Exception e) {
-			logger.error(String.format("Invalid adapter properties input: %s",e.getMessage()));
+			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()));
 		}
 		return Collections.emptySet();
 	}
