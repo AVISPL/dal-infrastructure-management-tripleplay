@@ -132,8 +132,11 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 						aggregatedDevice.setDeviceId(getDefaultValueForNullOrEmpty(client.getClientId()));
 						aggregatedDevice.setProperties(properties);
 						aggregatedDevice.setDeviceName(getDefaultValueForNullOrEmpty(client.getTypeDescription()));
-						if (client.getConnectionStatus()!=null)
+						if (client.getConnectionStatus() != null) {
 							aggregatedDevice.setDeviceOnline(client.getConnectionStatus().equals(TriplePlayConstrant.ONLINE));
+						} else {
+							aggregatedDevice.setDeviceOnline(false);
+						}
 						aggregatedDevice.setType(getDefaultValueForNullOrEmpty(client.getType()));
 						if (!controllableProperties.isEmpty()) {
 							aggregatedDevice.setControllableProperties(controllableProperties);
