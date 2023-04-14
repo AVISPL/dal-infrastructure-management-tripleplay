@@ -290,7 +290,6 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			if (StringUtils.isNotNullOrEmpty(deviceId) && cachedAggregatedDevices.containsKey(deviceId)) {
 				aggregatedDeviceControl(property, value, cachedAggregatedDevices.get(deviceId));
 			}
-
 		} finally {
 			reentrantLock.unlock();
 		}
@@ -322,7 +321,6 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			logger.debug("Start call retrieveMultipleStatistic");
 		}
 		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
-
 	}
 
 	/**
@@ -439,7 +437,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			}
 			return pollingIntervalValue;
 		} catch (Exception e) {
-			throw new IllegalArgumentException(String.format("Unexpected pollingInterval value: %s", pollingInterval));
+			throw new IllegalArgumentException(String.format("Unexpected pollingInterval value: %s", pollingInterval), e);
 		}
 	}
 
@@ -519,6 +517,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	/**
 	 * calculating minimum of polling interval
+	 *
+	 * @return Number of polling interval
 	 */
 	private int calculatingMinPollingInterval() {
 		if (!cachedClients.isEmpty()) {
@@ -567,7 +567,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				MonitoringData monitoringData = objectMapper.readValue(responseOfQueryRequest, MonitoringData.class);
 				Client responseClient = monitoringData.getClientWrapper().getClients().get(0);
 
-				if (value != responseClient.getActivity().getCurrentService().getName()) {
+				if (!value.equals(responseClient.getActivity().getCurrentService().getName())) {
 					throw new IllegalStateException(String.format("Can not control channel of device %s, unknown error", client.getDeviceId()));
 				}
 				Map<String, String> properties = client.getProperties();
@@ -810,9 +810,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				}
 				return setAdapterPropertiesElement;
 			}
-			return Collections.emptySet();
 		} catch (Exception e) {
-			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()));
+			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()),e);
 		}
 		return Collections.emptySet();
 	}
