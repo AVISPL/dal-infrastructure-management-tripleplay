@@ -50,6 +50,7 @@ import com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monit
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.common.monitoring.NetworkMetric;
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.Activity;
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.Client;
+import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.ClientWrapper;
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.MonitoringData;
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.Service;
 import com.avispl.symphony.dal.infrastructure.management.tripleplay.dto.ServiceWrapper;
@@ -121,7 +122,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 					String requestBody = queryClientRequest.buildRequestBody();
 					String response = doPost(TriplePlayURL.BASE_URI, requestBody);
 					MonitoringData monitoringData = objectMapper.readValue(response, MonitoringData.class);
-					for (Client client : monitoringData.getClientWrapper().getClients()) {
+					List<Client> clients = Optional.ofNullable(monitoringData.getClientWrapper()).map(ClientWrapper::getClients).orElse(Collections.EMPTY_LIST);
+					for (Client client : clients) {
 						convertServiceToAllService(client);
 						addClientToCachedClients(client);
 						List<AdvancedControllableProperty> controllableProperties = new ArrayList<>();
@@ -132,11 +134,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 						aggregatedDevice.setDeviceId(getDefaultValueForNullOrEmpty(client.getClientId()));
 						aggregatedDevice.setProperties(properties);
 						aggregatedDevice.setDeviceName(getDefaultValueForNullOrEmpty(client.getTypeDescription()));
-						if (client.getConnectionStatus() != null) {
-							aggregatedDevice.setDeviceOnline(client.getConnectionStatus().equals(TriplePlayConstrant.ONLINE));
-						} else {
-							aggregatedDevice.setDeviceOnline(false);
-						}
+						aggregatedDevice.setDeviceOnline(getDefaultValueForNullOrEmpty(client.getConnectionStatus()).equals(TriplePlayConstrant.ONLINE));
 						if (!controllableProperties.isEmpty()) {
 							aggregatedDevice.setControllableProperties(controllableProperties);
 						}
@@ -555,8 +553,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			HttpHeaders headers = new HttpHeaders();
 			ControllingRequestBody controllingRequest = new ControllingRequestBody(client.getDeviceId(), value);
 			ResponseEntity<?> response = doRequest(TriplePlayURL.BASE_URI, HttpMethod.PUT, headers, controllingRequest.buildRequestBody(), String.class);
-			Optional<?> responseBody = Optional.ofNullable(response)
-					.map(HttpEntity::getBody);
+			Optional<?> responseBody = Optional.ofNullable(response).map(HttpEntity::getBody);
 			if (response.getStatusCode().is2xxSuccessful() && responseBody.isPresent()) {
 				//Check channel was change
 				List<String> macAddress = new ArrayList<>();
@@ -811,7 +808,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				return setAdapterPropertiesElement;
 			}
 		} catch (Exception e) {
-			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()),e);
+			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()), e);
 		}
 		return Collections.emptySet();
 	}
