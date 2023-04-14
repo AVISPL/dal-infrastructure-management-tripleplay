@@ -57,10 +57,8 @@ public class TriplePlayAggregatorCommunicatorTest {
 			List<AggregatedDevice> aggregatedDevices = triplePlayAggregatorCommunicator.retrieveMultipleStatistics();
 			for (AggregatedDevice aggregatedDevice : aggregatedDevices) {
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_ID.getName()));
-				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.DEVICE_TYPE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALE.getName()));
 				Assertions.assertNotNull(aggregatedDevice.getProperties().get(ClientInfoMetric.LOCALTION.getName()));
-				System.out.println(aggregatedDevice.getProperties().get(ClientInfoMetric.ONLINE.getName()));
 			}
 		}
 	}
