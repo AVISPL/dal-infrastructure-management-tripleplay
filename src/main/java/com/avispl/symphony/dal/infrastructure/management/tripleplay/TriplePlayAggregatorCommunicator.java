@@ -132,8 +132,11 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 						aggregatedDevice.setDeviceId(getDefaultValueForNullOrEmpty(client.getClientId()));
 						aggregatedDevice.setProperties(properties);
 						aggregatedDevice.setDeviceName(getDefaultValueForNullOrEmpty(client.getTypeDescription()));
-						aggregatedDevice.setDeviceOnline(client.getConnectionStatus().equals(TriplePlayConstrant.ONLINE));
-						aggregatedDevice.setType(getDefaultValueForNullOrEmpty(client.getType()));
+						if (client.getConnectionStatus() != null) {
+							aggregatedDevice.setDeviceOnline(client.getConnectionStatus().equals(TriplePlayConstrant.ONLINE));
+						} else {
+							aggregatedDevice.setDeviceOnline(false);
+						}
 						if (!controllableProperties.isEmpty()) {
 							aggregatedDevice.setControllableProperties(controllableProperties);
 						}
@@ -172,7 +175,10 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	 */
 	private volatile String pollingInterval;
 
-	private String deviceNameFilter = "";
+	/**
+	 * filter devices by name
+	 */
+	private String deviceNameFilter;
 
 	/**
 	 * the last customer's mac address was updated in getMultipleStatistics before
@@ -197,9 +203,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 	/**
 	 * cachedServices store all service
 	 */
-	private HashMap<String, Service> cachedServices = new HashMap<>();
+	private Map<String, Service> cachedServices = new HashMap<>();
 
-	private boolean isEmergencyDelivery = false;
+	private boolean isEmergencyDelivery;
 	private ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
@@ -238,6 +244,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		this.deviceNameFilter = deviceNameFilter;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Statistics> getMultipleStatistics() throws Exception {
 		//Because there are some threads that keep running when the next getMultiple is called,
@@ -257,6 +266,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				retrieveServices();
 				localPollingInterval = calculatingLocalPollingInterval();
 				deviceStatisticsCollectionThreads = calculatingThreadQuantity();
+
 				//Multi thread for get information of client
 				retrieveInformationOfAllClients(currentSizeCacheClients);
 			}
@@ -267,6 +277,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		return null;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
 		String property = controllableProperty.getProperty();
@@ -277,12 +290,14 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			if (StringUtils.isNotNullOrEmpty(deviceId) && cachedAggregatedDevices.containsKey(deviceId)) {
 				aggregatedDeviceControl(property, value, cachedAggregatedDevices.get(deviceId));
 			}
-
 		} finally {
 			reentrantLock.unlock();
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void controlProperties(List<ControllableProperty> list) throws Exception {
 		for (ControllableProperty controllableProperty : list) {
@@ -290,25 +305,35 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected void authenticate() throws Exception {
-
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics() throws Exception {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Start call retrieveMultipleStatistic");
 		}
 		return cachedAggregatedDevices.values().stream().collect(Collectors.toList());
-
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<AggregatedDevice> retrieveMultipleStatistics(List<String> list) throws Exception {
 		return retrieveMultipleStatistics();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected void internalDestroy() {
 		cachedClients.clear();
@@ -355,6 +380,9 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 		}
 	}
 
+	/**
+	 * filter all device by name
+	 */
 	private void filterByName() {
 		if (StringUtils.isNullOrEmpty(deviceNameFilter)) {
 			return;
@@ -409,7 +437,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 			}
 			return pollingIntervalValue;
 		} catch (Exception e) {
-			throw new IllegalArgumentException(String.format("Unexpected pollingInterval value: %s", pollingInterval));
+			throw new IllegalArgumentException(String.format("Unexpected pollingInterval value: %s", pollingInterval), e);
 		}
 	}
 
@@ -489,6 +517,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 
 	/**
 	 * calculating minimum of polling interval
+	 *
+	 * @return Number of polling interval
 	 */
 	private int calculatingMinPollingInterval() {
 		if (!cachedClients.isEmpty()) {
@@ -537,7 +567,7 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				MonitoringData monitoringData = objectMapper.readValue(responseOfQueryRequest, MonitoringData.class);
 				Client responseClient = monitoringData.getClientWrapper().getClients().get(0);
 
-				if (value != responseClient.getActivity().getCurrentService().getName()) {
+				if (!value.equals(responseClient.getActivity().getCurrentService().getName())) {
 					throw new IllegalStateException(String.format("Can not control channel of device %s, unknown error", client.getDeviceId()));
 				}
 				Map<String, String> properties = client.getProperties();
@@ -780,9 +810,8 @@ public class TriplePlayAggregatorCommunicator extends RestCommunicator implement
 				}
 				return setAdapterPropertiesElement;
 			}
-			return Collections.emptySet();
 		} catch (Exception e) {
-			logger.error("In valid adapter properties input");
+			logger.error(String.format("Invalid adapter properties input: %s", e.getMessage()),e);
 		}
 		return Collections.emptySet();
 	}
