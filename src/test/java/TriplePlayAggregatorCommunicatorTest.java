@@ -28,7 +28,7 @@ public class TriplePlayAggregatorCommunicatorTest {
 
 	@BeforeEach()
 	public void setUp() throws Exception {
-		triplePlayAggregatorCommunicator.setHost("10.34.41.125");
+		triplePlayAggregatorCommunicator.setHost("10.34.41.170");
 		triplePlayAggregatorCommunicator.setTrustAllCertificates(true);
 		triplePlayAggregatorCommunicator.setPort(80);
 		triplePlayAggregatorCommunicator.setTrustAllCertificates(true);
